@@ -34,12 +34,15 @@ class InBitStream
     typename std::vector<Int>::iterator _bufferindex;
 
     static const std::size_t nbits = sizeof(Int) << 3;
+    static const std::size_t ONE = 1;
+
+#define MASK_AND(n) ((ONE << n) - 1)
 
 public:
     InBitStream(std::istream &is, std::size_t bufferSize = 4 << 20) 
         : _is(is), _bufferSize(bufferSize)
     {
-        _mask = 1 << (nbits - 1);
+        _mask = ONE << (nbits - 1);
         _remainingBits = nbits;
         _buffer.resize(bufferSize);
         _is.read(reinterpret_cast<char*>(_buffer.data()), bufferSize);
@@ -51,21 +54,59 @@ public:
     bool read_1bit() {
         bool bit = *_bufferindex & _mask;
         if ( !(--_remainingBits, _mask >>= 1) ) {
-            _mask = 1 << (nbits - 1);
+            _mask = ONE << (nbits - 1);
             _remainingBits = nbits;
-            if (++_bufferindex == _buffer.end())
-                fill_buffer();
+            seek_buffer();
         }
         return bit;
     }
 
     template<typename T> T read(T count) {
-        // TODO: faster version
         T ret = 0;
-        while (count--) {
-            ret |= read_1bit() << count;
+/*         while (count--) {
+ *             ret |= read_1bit() << count;
+ *         }
+ */
+        
+        int diff = (int)count - _remainingBits;
+        if (count < _remainingBits) {
+            ret = (*_bufferindex >> -diff) & MASK_AND(count);
+            _remainingBits = -diff;
+        } else if (diff < (int)nbits) {
+            // add first '_remainingBits' bits
+            ret = *_bufferindex & MASK_AND(_remainingBits);
+            seek_buffer();
+            // add other 'diff' bits
+            (ret <<= diff) |= (*_bufferindex >> (nbits - diff)) & MASK_AND(diff);
+            _remainingBits = nbits - diff;
+        } else {
+            // add first '_remainingBits' bits
+            ret = *_bufferindex & MASK_AND(_remainingBits);
+
+            do {
+                seek_buffer();
+                (ret <<= nbits) |= *_bufferindex;
+                diff -= nbits;
+            } while (diff >= (int)nbits);
+
+            if (diff > 0) {
+                // add remaining 'diff' bits
+                (ret <<= diff) |= (*_bufferindex >> (nbits - diff)) & MASK_AND(diff);                         
+                _remainingBits = nbits - diff;
+            } else {
+                seek_buffer();
+                _remainingBits = nbits;
+            }
         }
+
+        _mask = ONE << (_remainingBits - 1);
+        
         return ret;
+    }
+
+    void seek_buffer() {
+        if (++_bufferindex == _buffer.end())
+            fill_buffer();
     }
 
     void fill_buffer()
@@ -98,6 +139,8 @@ public:
 //    }
 //
 //    std::size_t remaining_bits() const { return _remainingBits; }
+
+#undef MASK_AND
 };
 
 #endif // __INBITSTREAM_HPP__
