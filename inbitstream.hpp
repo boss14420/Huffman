@@ -30,7 +30,8 @@ class InBitStream
     std::size_t _remainingBits;
     std::istream &_is;
     std::size_t _bufferSize;
-    Int _mask;
+    std::size_t _mask;
+    std::size_t _bufftop;
     typename std::vector<Int>::iterator _bufferindex;
 
     static const std::size_t nbits = sizeof(Int) << 3;
@@ -49,10 +50,11 @@ public:
         _bufferSize = _is.gcount();
         _buffer.resize(bufferSize);
         _bufferindex = _buffer.begin();
+        _bufftop = *_bufferindex;
     }
 
     bool read_1bit() {
-        bool bit = *_bufferindex & _mask;
+        bool bit = _bufftop & _mask;
         if ( !(--_remainingBits, _mask >>= 1) ) {
             _mask = ONE << (nbits - 1);
             _remainingBits = nbits;
@@ -70,28 +72,28 @@ public:
         
         int diff = (int)count - _remainingBits;
         if (count < _remainingBits) {
-            ret = (*_bufferindex >> -diff) & MASK_AND(count);
+            ret = (_bufftop >> -diff) & MASK_AND(count);
             _remainingBits = -diff;
         } else if (diff < (int)nbits) {
             // add first '_remainingBits' bits
-            ret = *_bufferindex & MASK_AND(_remainingBits);
+            ret = _bufftop & MASK_AND(_remainingBits);
             seek_buffer();
             // add other 'diff' bits
-            (ret <<= diff) |= (*_bufferindex >> (nbits - diff)) & MASK_AND(diff);
+            (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);
             _remainingBits = nbits - diff;
         } else {
             // add first '_remainingBits' bits
-            ret = *_bufferindex & MASK_AND(_remainingBits);
+            ret = _bufftop & MASK_AND(_remainingBits);
 
             seek_buffer();
             while (diff >= (int)nbits) {
-                (ret <<= nbits) |= *_bufferindex;
+                (ret <<= nbits) |= _bufftop;
                 diff -= nbits;
                 seek_buffer();
             }
 
             // add last 'diff' bits
-            (ret <<= diff) |= (*_bufferindex >> (nbits - diff)) & MASK_AND(diff);                         
+            (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);                         
             _remainingBits = nbits - diff;
         }
 
@@ -103,6 +105,7 @@ public:
     void seek_buffer() {
         if (++_bufferindex == _buffer.end())
             fill_buffer();
+        _bufftop = *_bufferindex;
     }
 
     void fill_buffer()
