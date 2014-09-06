@@ -72,6 +72,8 @@ public:
     {
         _is.read(reinterpret_cast<char*>(_buffer.data()), _buffer.size());
         _bufferSize = _is.gcount();
+        _buffer.resize(_bufferSize);
+        _bufferindex = _buffer.begin();
 //        _eof = _is.eof();
     }
     

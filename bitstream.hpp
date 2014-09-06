@@ -88,7 +88,9 @@ public:
                 _os.write(reinterpret_cast<char const*>(&buff), sizeof(Int));
             _buffer.push_back(0);
             _remainingBits = nbits;
-        } 
+        } else {
+            _buffer.push_back(buff);
+        }
     }
 
     std::size_t bit_count() const {
