@@ -83,20 +83,16 @@ public:
             // add first '_remainingBits' bits
             ret = *_bufferindex & MASK_AND(_remainingBits);
 
-            do {
-                seek_buffer();
+            seek_buffer();
+            while (diff >= (int)nbits) {
                 (ret <<= nbits) |= *_bufferindex;
                 diff -= nbits;
-            } while (diff >= (int)nbits);
-
-            if (diff > 0) {
-                // add remaining 'diff' bits
-                (ret <<= diff) |= (*_bufferindex >> (nbits - diff)) & MASK_AND(diff);                         
-                _remainingBits = nbits - diff;
-            } else {
                 seek_buffer();
-                _remainingBits = nbits;
             }
+
+            // add last 'diff' bits
+            (ret <<= diff) |= (*_bufferindex >> (nbits - diff)) & MASK_AND(diff);                         
+            _remainingBits = nbits - diff;
         }
 
         _mask = ONE << (_remainingBits - 1);
