@@ -30,6 +30,7 @@ class BitStream
     std::size_t _remainingBits;
     std::ostream &_os;
     std::size_t _bufferSize;
+    std::size_t _bufftop;
 
     static const std::size_t nbits = sizeof(Int) << 3;
 
@@ -37,8 +38,9 @@ public:
     BitStream(std::ostream &os, std::size_t bufferSize = 4 << 20) 
         : _os(os), _bufferSize(bufferSize)
     {
-        _buffer.reserve(bufferSize+1);
-        _buffer.push_back(0);
+        _buffer.reserve(bufferSize);
+//        _buffer.push_back(0);
+        _bufftop = 0;
         _remainingBits = nbits;
     }
 
@@ -48,53 +50,52 @@ public:
     {
         if (bitset.empty()) return stream;
 
-        Int buff = stream._buffer.back();     
-        stream._buffer.pop_back();
+//        Int bufftop = stream._buffer.back();     
+        Int bufftop = stream._bufftop;
+//        stream._buffer.pop_back();
         auto remain = stream._remainingBits;
         auto bi = bitset.begin();
 
         while (bi != bitset.end()) {
             while (bi != bitset.end() && remain) {
-                buff |= *bi++ << --remain;
+                bufftop |= *bi++ << --remain;
             }
-            stream._buffer.push_back(buff);
+//            stream._buffer.push_back(bufftop);
 
-            if (bi != bitset.end()) {
-                buff = 0;
+            if (!remain) {
+                stream._buffer.push_back(bufftop);
+                bufftop = 0;
                 remain = BitStream::nbits;
-            } else if (!remain) {
-                buff = 0;
-                remain = BitStream::nbits;
-                stream._buffer.push_back(buff);
             }
+
             if (stream._buffer.size() == stream._bufferSize)
                 stream.flush(false);
         }
         stream._remainingBits = remain;
+        stream._bufftop = bufftop;
 
         return stream;
     }
 
-    void flush(bool writeAll = true)
+    void flush(bool writeExtraBits = true)
     {
         _os.write(reinterpret_cast<char const*>(_buffer.data()), 
-                  (_buffer.size() - 1) * sizeof(Int));
+                  _buffer.size() * sizeof(Int));
 
-        auto buff = _buffer.back();
+        // TODO: seek iterator to begin
         _buffer.clear();
 
-        if (writeAll) {
-            if (_remainingBits < nbits)
-                _os.write(reinterpret_cast<char const*>(&buff), sizeof(Int));
-            _buffer.push_back(0);
-            _remainingBits = nbits;
-        } else {
-            _buffer.push_back(buff);
+        if (writeExtraBits) {
+            if (_remainingBits < nbits) {
+                _os.write(reinterpret_cast<char const*>(&_bufftop), sizeof(Int));
+                _bufftop = 0;
+                _remainingBits = nbits;
+            }
         }
     }
 
     std::size_t bit_count() const {
-        return nbits * (_buffer.size() - 1) + (nbits - _remainingBits);
+        return nbits * _buffer.size() + (nbits - _remainingBits);
     }
 
     std::size_t remaining_bits() const { return _remainingBits; }
