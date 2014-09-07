@@ -22,6 +22,7 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <memory>
 
 #include "integer.hpp"
 
@@ -35,14 +36,15 @@ class BitStream
     std::size_t _bufferSize;
     Int _bufftop;
 
-    static const std::size_t nbits = sizeof(Int) << 3;
+    static const std::size_t nbytes = sizeof(Int);
+    static const std::size_t nbits = nbytes << 3;
     static const Int ONE = 1;
 
 #define MASK_AND(n) ((ONE << n) - 1)
 
 public:
     BitStream(std::ostream &os, std::size_t bufferSize = 4 << 20) 
-        : _os(os), _bufferSize(bufferSize / sizeof(Int))
+        : _os(os), _bufferSize(bufferSize / nbytes)
     {
         _buffer.reserve(_bufferSize);
 //        _buffer.push_back(0);
@@ -138,29 +140,30 @@ public:
 
     void flush(bool writeExtraBits = true)
     {
-//        char bytes[sizeof(Int)];
+//        char bytes[nbytes];
 //        for (auto buff : _buffer) {
-//            _os.write(int_to_bytes(bytes, buff), sizeof(Int));
+//            _os.write(int_to_bytes(bytes, buff), nbytes);
 //        }
-        std::vector<char> bytes(_buffer.size() * sizeof(Int));
-        auto ptr = const_cast<char*>(bytes.data());
+        auto p = std::get_temporary_buffer<char>(_buffer.size() * nbytes);
+        auto ptr = p.first;
         for (auto buff : _buffer) {
             int_to_bytes(ptr, buff);
-            ptr += sizeof(Int);
+            ptr += nbytes;
         }
-        _os.write(bytes.data(), bytes.size());
+        _os.write(p.first, p.second);
+        std::return_temporary_buffer(p.first);
 
 //        _os.write(reinterpret_cast<char const*>(_buffer.data()), 
-//                  _buffer.size() * sizeof(Int));
+//                  _buffer.size() * nbytes);
 
         // TODO: seek iterator to begin
         _buffer.clear();
 
         if (writeExtraBits) {
             if (_remainingBits < nbits) {
-//                _os.write(reinterpret_cast<char const*>(&_bufftop), sizeof(Int));
-                int nwrite = sizeof(Int) - (_remainingBits / 8);
-                char bytes[sizeof(Int)];
+//                _os.write(reinterpret_cast<char const*>(&_bufftop), nbytes);
+                int nwrite = nbytes - (_remainingBits / 8);
+                char bytes[nbytes];
                 _os.write(int_to_bytes(bytes, _bufftop), nwrite);
                 _bufftop = 0;
                 _remainingBits = nbits;
