@@ -171,7 +171,7 @@ void Huffman::gen_codewords()
 
     // max code value of _codewords length i
     _limit.assign(_max_codelength + 1, 0);
-    if (_min_codelength != _max_codelength)
+    if (_min_codelength != WordLength)
         _limit[_min_codelength] = _num_codewords[_min_codelength] - 1;
     else
         _limit[_min_codelength] = std::numeric_limits<Word>::max();
@@ -214,7 +214,7 @@ void Huffman::encode(std::ostream& os) const
 {
     _is.clear();
     _is.seekg(_is_pos);
-    if (_min_codelength != _max_codelength) {
+    if (_min_codelength != WordLength) {
         Word word;
 //        BitStream<> bs(os);
         BitStream bs(os);
@@ -273,7 +273,7 @@ void Huffman::decode(std::ostream& os) const
     _is.clear();
     _is.seekg(_is_pos);
 
-    if (_min_codelength != _max_codelength) {
+    if (_min_codelength != WordLength) {
         InBitStream ibs(_is);
         CodeLength l = _min_codelength;
         std::size_t value = ibs.read<std::size_t>(_min_codelength);
@@ -347,7 +347,7 @@ void Huffman::read_header()
 
     _is_pos = _is.tellg();
 
-    if (_min_codelength == _max_codelength) return;
+//    if (_min_codelength == _max_codelength) return;
 
     _words.reserve(num_words);
     for (auto l = _min_codelength; l <= _max_codelength; ++l) {
