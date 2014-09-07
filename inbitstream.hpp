@@ -117,24 +117,26 @@ public:
     {
 //        _is.read(reinterpret_cast<char*>(_buffer.data()), _buffer.size());
         
-        auto p = std::get_temporary_buffer<char>(_bufferSize / nbytes);
+        auto p = std::get_temporary_buffer<char>(_bufferSize * nbytes);
         char *ptr = p.first;
 
         _is.read(ptr, p.second);
-        auto readed = _is.gcount();
-        auto rounded = (readed / nbytes) * nbytes;
-        char *ptr_end = ptr + ((rounded == readed) ? rounded : rounded + nbytes);
+        auto count = _is.gcount();
+        auto round = (count / nbytes) * nbytes;
+        char *ptr_end = ptr + ((round == count) ? round : round + nbytes);
         // set extra bytes to zero
-        std::memset(ptr + rounded, 0, readed - rounded);
+        std::memset(ptr + count, 0, ptr_end - (ptr + count));
 
         auto bi = _buffer.begin();
         for (; ptr < ptr_end; ptr += nbytes, ++bi) {
             *bi = bytes_to_int<Int>(ptr);
         }
 
-        _bufferSize = (ptr_end - ptr) / nbytes;
+        _bufferSize = (ptr_end - p.first) / nbytes;
         _buffer.resize(_bufferSize);
         _bufferindex = _buffer.begin();
+
+        std::return_temporary_buffer(p.first);
 //        _eof = _is.eof();
     }
     
