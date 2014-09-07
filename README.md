@@ -100,7 +100,7 @@ Ta có thuật toán giải mã như sau:
 Nội dung 1 file bao gồm:
 
 1. Phần tiêu đề (xem phương thức `Huffman::write_header()`)
-    1. Magic number: từ `COMPRESS` (6 byte)
+    1. Magic number: từ `COMPRESS` (8 byte)
     2. Kích thước file gốc: 8 byte, được ghi theo kiểu Big Endian
     3. Số lượng từ trong file gốc: 8 byte, Big Endian
     4. Độ dài một từ (`wl` tính theo bit): 1 byte

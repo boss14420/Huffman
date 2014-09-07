@@ -298,6 +298,14 @@ void Huffman::decode(std::ostream& os) const
 //                readed_bits += dl;
             }
         }
+    } else {
+        // copy file
+        std::vector<char> buff(4 << 20); // 4MiB buffer
+        while (!_is.eof()) {
+            _is.read(buff.data(), buff.size());
+            auto bytes = _is.gcount(); 
+            os.write(buff.data(), bytes);
+        }
     }
 }
 
@@ -325,8 +333,11 @@ void Huffman::read_header()
     auto num_words = 0;
     CodeLength k;
 
-    if (_min_codelength == _max_codelength)
+    if (_min_codelength == _max_codelength) {
         _limit[_min_codelength] = (1 << word_length) - 1;
+        if (_min_codelength == WordLength)
+            num_words = 1 << WordLength;
+    }
     for (auto l = _min_codelength; l <= _max_codelength; ++l) {
         _is.read(reinterpret_cast<char*>(&k), sizeof(CodeLength));
         _num_codewords[l] = k;
