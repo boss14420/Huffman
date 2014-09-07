@@ -22,10 +22,13 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <memory>
+#include <cstring>
+#include "integer.hpp"
 
-template <typename Int = std::uint8_t>
 class InBitStream
 {
+    typedef std::uint64_t Int;
     std::vector<Int> _buffer;
     std::size_t _remainingBits;
     std::istream &_is;
@@ -34,22 +37,24 @@ class InBitStream
     std::size_t _bufftop;
     typename std::vector<Int>::iterator _bufferindex;
 
-    static const std::size_t nbits = sizeof(Int) << 3;
+    static const std::size_t nbytes = sizeof(Int);
+    static const std::size_t nbits = nbytes << 3;
     static const std::size_t ONE = 1;
 
 #define MASK_AND(n) ((ONE << n) - 1)
 
 public:
     InBitStream(std::istream &is, std::size_t bufferSize = 4 << 20) 
-        : _is(is), _bufferSize(bufferSize)
+        : _is(is), _bufferSize(bufferSize / nbytes)
     {
         _mask = ONE << (nbits - 1);
         _remainingBits = nbits;
         _buffer.resize(bufferSize);
-        _is.read(reinterpret_cast<char*>(_buffer.data()), bufferSize);
-        _bufferSize = _is.gcount();
-        _buffer.resize(bufferSize);
-        _bufferindex = _buffer.begin();
+        fill_buffer();
+//        _is.read(reinterpret_cast<char*>(_buffer.data()), bufferSize);
+//        _bufferSize = _is.gcount();
+//        _buffer.resize(bufferSize);
+//        _bufferindex = _buffer.begin();
         _bufftop = *_bufferindex;
     }
 
@@ -110,8 +115,24 @@ public:
 
     void fill_buffer()
     {
-        _is.read(reinterpret_cast<char*>(_buffer.data()), _buffer.size());
-        _bufferSize = _is.gcount();
+//        _is.read(reinterpret_cast<char*>(_buffer.data()), _buffer.size());
+        
+        auto p = std::get_temporary_buffer<char>(_bufferSize / nbytes);
+        char *ptr = p.first;
+
+        _is.read(ptr, p.second);
+        auto readed = _is.gcount();
+        auto rounded = (readed / nbytes) * nbytes;
+        char *ptr_end = ptr + ((rounded == readed) ? rounded : rounded + nbytes);
+        // set extra bytes to zero
+        std::memset(ptr + rounded, 0, readed - rounded);
+
+        auto bi = _buffer.begin();
+        for (; ptr < ptr_end; ptr += nbytes, ++bi) {
+            *bi = bytes_to_int<Int>(ptr);
+        }
+
+        _bufferSize = (ptr_end - ptr) / nbytes;
         _buffer.resize(_bufferSize);
         _bufferindex = _buffer.begin();
 //        _eof = _is.eof();
@@ -120,14 +141,14 @@ public:
 //    void flush(bool writeAll = true)
 //    {
 //        _os.write(reinterpret_cast<char const*>(_buffer.data()), 
-//                  (_buffer.size() - 1) * sizeof(Int));
+//                  (_buffer.size() - 1) * nbytes);
 //
 //        auto buff = _buffer.back();
 //        _buffer.clear();
 //
 //        if (writeAll) {
 //            if (_remainingBits < nbits)
-//                _os.write(reinterpret_cast<char const*>(&buff), sizeof(Int));
+//                _os.write(reinterpret_cast<char const*>(&buff), nbytes);
 //            _buffer.push_back(0);
 //            _remainingBits = nbits;
 //        } 

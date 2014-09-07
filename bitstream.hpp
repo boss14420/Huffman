@@ -41,10 +41,10 @@ class BitStream
 #define MASK_AND(n) ((ONE << n) - 1)
 
 public:
-    BitStream(std::ostream &os, std::size_t bufferSize = 4 << 17) 
-        : _os(os), _bufferSize(bufferSize)
+    BitStream(std::ostream &os, std::size_t bufferSize = 4 << 20) 
+        : _os(os), _bufferSize(bufferSize / sizeof(Int))
     {
-        _buffer.reserve(bufferSize);
+        _buffer.reserve(_bufferSize);
 //        _buffer.push_back(0);
         _bufftop = 0;
         _remainingBits = nbits;

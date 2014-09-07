@@ -274,10 +274,10 @@ void Huffman::decode(std::ostream& os) const
     _is.seekg(_is_pos);
 
     if (_min_codelength != _max_codelength) {
-        InBitStream<> ibs(_is);
+        InBitStream ibs(_is);
         CodeLength l = _min_codelength;
         std::size_t value = ibs.read<std::size_t>(_min_codelength);
-        decltype(_filesize) _decoded_words = 0;//, readed_bits = _min_codelength;
+        decltype(_filesize) _decoded_words = 0, readed_bits = _min_codelength;
         char wordbyte[sizeof(Word)];
         while(_decoded_words != _filesize) {
             if (value <= _limit[l]) {
@@ -285,18 +285,18 @@ void Huffman::decode(std::ostream& os) const
 //                os.write(reinterpret_cast<char const*>(&w), sizeof(Word));
                 os.write(int_to_bytes<Word>(wordbyte, w), sizeof(Word));
 
-//                if (_decoded_words == 0x54A8DE)
-//                    std::cout << readed_bits << '\n';
+                if (_decoded_words == 0x17D05)
+                    std::cout << readed_bits << '\n';
 
                 value = ibs.read<decltype(value)>(l = _min_codelength);
-//                readed_bits += _min_codelength;
+                readed_bits += _min_codelength;
                 ++_decoded_words;
             } else {
                 CodeLength dl = 0;
                 do { ++dl; } while (!_num_codewords[l+dl]);
                 l += dl;
                 value = (value << dl) | ibs.read<std::size_t>(dl);
-//                readed_bits += dl;
+                readed_bits += dl;
             }
         }
     }
