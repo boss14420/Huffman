@@ -24,8 +24,7 @@
 #include <queue>
 #include <cstring>
 
-#include "bitstream.hpp"
-#include "inbitstream.hpp"
+#include "bitstream.hh"
 #include "huffman.hh"
 #include "integer.hpp"
 
@@ -217,7 +216,7 @@ void Huffman::encode(std::ostream& os) const
     if (_min_codelength != WordLength) {
         Word word;
 //        BitStream<> bs(os);
-        BitStream bs(os);
+        BitStream bs(os, BitStream::Output);
         while (!_is.eof()) {
             _is.read(reinterpret_cast<char*>(&word), sizeof(Word));
 //            bs << _codewords[word];
@@ -274,7 +273,7 @@ void Huffman::decode(std::ostream& os) const
     _is.seekg(_is_pos);
 
     if (_min_codelength != WordLength) {
-        InBitStream ibs(_is);
+        BitStream ibs(_is, BitStream::Input);
         CodeLength l = _min_codelength;
         std::size_t value = ibs.read<std::size_t>(_min_codelength);
         decltype(_filesize) _decoded_words = 0;//, readed_bits = _min_codelength;

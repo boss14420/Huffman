@@ -19,7 +19,7 @@
 #ifndef __HUFFMAN_HH__
 #define __HUFFMAN_HH__
 
-#include <iosfwd>
+#include <iostream>
 #include <vector>
 #include <unordered_map>
 #include <bitset>

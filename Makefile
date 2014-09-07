@@ -4,13 +4,16 @@ CXX 		= g++
 #CXXFLAGS 	= -std=c++11 -g -Wall -pipe
 CXXFLAGS 	= -std=c++11 -Wall -O3 -march=native -pipe -g
 
-huffman.o: huffman.cc huffman.hh integer.hpp bitstream.hpp inbitstream.hpp
+huffman.o: huffman.cc huffman.hh integer.hpp endian.hh bitstream.hh
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+bitstream.o: bitstream.cc bitstream.hh integer.hpp endian.hh
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 test.o: main.cc huffman.hh
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-test: test.o huffman.o
+test: test.o huffman.o bitstream.o
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:
