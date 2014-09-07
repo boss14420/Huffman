@@ -191,22 +191,24 @@ void Huffman::gen_codewords()
     auto values = _limit;
     for (auto w : _words_string) {
         auto v = values[_code_length[w]]--;
-        _codewords[w] = std::move(to_bitset(v, _code_length[w]));
+//        _codewords[w] = std::move(to_bitset(v, _code_length[w]));
+        _codewords[w] = BitSet(v);
     }
 }
 
-Huffman::BitSet Huffman::to_bitset(std::size_t value, CodeLength length)
-{
-    if (std::floor(std::log2(value)) + 1 > length)
-        std::cout << value << ", " << (int)length << '\n';
-    BitSet bitset(length, 0);
-    auto bi = bitset.rbegin();
-    while (value) {
-        *bi++ = (value & 1);
-        value >>= 1;
-    }
-    return bitset;
-}
+/* Huffman::BitSet Huffman::to_bitset(std::size_t value, CodeLength length)
+ * {
+ *     if (std::floor(std::log2(value)) + 1 > length)
+ *         std::cout << value << ", " << (int)length << '\n';
+ *     BitSet bitset(length, 0);
+ *     auto bi = bitset.rbegin();
+ *     while (value) {
+ *         *bi++ = (value & 1);
+ *         value >>= 1;
+ *     }
+ *     return bitset;
+ * }
+ */
 
 void Huffman::encode(std::ostream& os) const
 {
@@ -214,10 +216,14 @@ void Huffman::encode(std::ostream& os) const
     _is.seekg(_is_pos);
     if (_min_codelength != _max_codelength) {
         Word word;
-        BitStream<> bs(os);
+//        BitStream<> bs(os);
+        BitStream bs(os);
         while (!_is.eof()) {
             _is.read(reinterpret_cast<char*>(&word), sizeof(Word));
-            bs << _codewords[word];
+//            bs << _codewords[word];
+//            auto offset = 64 - _code_length[word];
+//            bs.write(_codewords[word].begin() + offset, _codewords[word].end());
+            bs.write(_codewords[word], _code_length[word]);
         }
         bs.flush();
     } else {

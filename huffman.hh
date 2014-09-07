@@ -22,12 +22,15 @@
 #include <iosfwd>
 #include <vector>
 #include <unordered_map>
+#include <bitset>
 
 class Huffman {
 public:
     typedef std::uint8_t Word;
     typedef std::uint8_t CodeLength;
-    typedef std::vector<bool> BitSet;
+//    typedef std::vector<bool> BitSet;
+//    typedef std::bitset<64> BitSet;
+    typedef std::uint64_t BitSet;
     static const std::size_t WordLength;
     static const char _magic_number[];
 
