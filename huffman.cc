@@ -275,6 +275,7 @@ void Huffman::decode(std::ostream& os) const
 
     if (_min_codelength != WordLength) {
         BitStream ibs(_is, BitStream::Input);
+        BitStream obs(os, BitStream::Output);
         CodeLength l = _min_codelength;
         std::size_t value = ibs.read<std::size_t>(_min_codelength);
         decltype(_filesize) _decoded_words = 0;//, readed_bits = _min_codelength;
@@ -291,7 +292,8 @@ void Huffman::decode(std::ostream& os) const
                 Word w = *(wsbl[l] - value);
                 int_to_bytes<Word>(wordbyte, w);
 //                os.write(reinterpret_cast<char const*>(&w), sizeof(Word));
-                os.write(int_to_bytes<Word>(wordbyte, w), sizeof(Word));
+//                os.write(int_to_bytes<Word>(wordbyte, w), sizeof(Word));
+                obs.write(w, WordLength);
 
 //                if (_decoded_words == 0x40090B0 - 1)
 //                    std::cout << readed_bits << '\n';
@@ -307,6 +309,7 @@ void Huffman::decode(std::ostream& os) const
 //                readed_bits += dl;
             }
         }
+        obs.flush();
     } else {
         // copy file
         std::vector<char> buff(4 << 20); // 4MiB buffer
