@@ -28,6 +28,8 @@
 #include "huffman.hh"
 #include "integer.hpp"
 
+#define CANNOT_COMPRESS (_min_codelength == WordLength)
+
 const std::size_t Huffman::WordLength = 8;
 const char Huffman::_magic_number[] = {'C', 'O', 'M', 'P',
                                        'R', 'E', 'S', 'S'};
@@ -153,8 +155,11 @@ void Huffman::gen_codewords()
                                         length_lt);
     _max_codelength = *std::max_element(_code_length.begin(), _code_length.end());
 
-    // TODO: stop if _min_codelength == _max_codelength
-//    if (_min_codelength == _max_codelength) return;
+    std::cout << "min_codelength: " << (int)_min_codelength
+              << "\nmax_codelength: " << (int)_max_codelength
+              << "\n";
+
+    if (CANNOT_COMPRESS) return;
 
     _num_codewords.assign(_max_codelength + 1, 0);
     for (auto l : _code_length) ++_num_codewords[l];
@@ -174,16 +179,10 @@ void Huffman::gen_codewords()
 
     // max code value of _codewords length i
     _limit.assign(_max_codelength + 1, 0);
-    if (_min_codelength != WordLength)
-        _limit[_min_codelength] = _num_codewords[_min_codelength] - 1;
-    else
-        _limit[_min_codelength] = std::numeric_limits<Word>::max();
+    _limit[_min_codelength] = _num_codewords[_min_codelength] - 1;
     for (auto l = _min_codelength + 1; l <= _max_codelength; ++l)
         _limit[l] = (_limit[l-1] + 1) * 2 + (_num_codewords[l] - 1);
 
-    std::cout << "min_codelength: " << (int)_min_codelength
-              << "\nmax_codelength: " << (int)_max_codelength
-              << "\n";
     for (auto l = _min_codelength; l <= _max_codelength; ++l) 
         std::cout << (int)l << ", " << (int)_num_codewords[l] << ", " << _limit[l] << '\n';
     std::cout << '\n';
@@ -217,7 +216,7 @@ void Huffman::encode(std::ostream& os) const
 {
     _is.clear();
     _is.seekg(_is_pos);
-    if (_min_codelength != WordLength) {
+    if (!CANNOT_COMPRESS) {
         std::size_t encoded_words = 0;
         Word word;
         BitStream obs(os, BitStream::Output);
@@ -255,10 +254,12 @@ void Huffman::write_header(std::ostream& os) const
     os.write(reinterpret_cast<char const*>(&wl), sizeof(Word));
     os.write(reinterpret_cast<char const*>(&_min_codelength), sizeof(CodeLength));
     os.write(reinterpret_cast<char const*>(&_max_codelength), sizeof(CodeLength));
-    os.write(reinterpret_cast<char const*>(&_num_codewords[_min_codelength]), 
+    if (!CANNOT_COMPRESS) {
+        os.write(reinterpret_cast<char const*>(&_num_codewords[_min_codelength]), 
                 _max_codelength - _min_codelength + 1);
-    os.write(reinterpret_cast<char const*>(_words_string.data()), 
-                _words_string.size() * sizeof(Word));
+        os.write(reinterpret_cast<char const*>(_words_string.data()), 
+                    _words_string.size() * sizeof(Word));
+    }
 }
 
 
@@ -277,7 +278,7 @@ void Huffman::decode(std::ostream& os) const
     _is.clear();
     _is.seekg(_is_pos);
 
-    if (_min_codelength != WordLength) {
+    if (!CANNOT_COMPRESS) {
         BitStream ibs(_is, BitStream::Input);
         BitStream obs(os, BitStream::Output);
         CodeLength l = _min_codelength;
@@ -343,6 +344,8 @@ void Huffman::read_header()
     _is.read(reinterpret_cast<char*>(&_min_codelength), sizeof(CodeLength));
     _is.read(reinterpret_cast<char*>(&_max_codelength), sizeof(CodeLength));
 
+    if (CANNOT_COMPRESS) return;
+
     _num_codewords.assign(_max_codelength + 1, 0);
     _limit.assign(_max_codelength + 1, 0);
     _base.assign(_max_codelength + 1, 0);
@@ -351,8 +354,6 @@ void Huffman::read_header()
 
     if (_min_codelength == _max_codelength) {
         _limit[_min_codelength] = (1 << word_length) - 1;
-        if (_min_codelength == WordLength)
-            num_words = 1 << WordLength;
     }
     for (auto l = _min_codelength; l <= _max_codelength; ++l) {
         _is.read(reinterpret_cast<char*>(&k), sizeof(CodeLength));
