@@ -29,7 +29,8 @@
 #include "integer.hpp"
 
 const std::size_t Huffman::WordLength = 8;
-const char Huffman::_magic_number[] = "COMPRESS";
+const char Huffman::_magic_number[] = {'C', 'O', 'M', 'P',
+                                       'R', 'E', 'S', 'S'};
 
 Huffman::Huffman(std::istream& is, Action action) 
     : _is(is), _action(action)
@@ -278,9 +279,17 @@ void Huffman::decode(std::ostream& os) const
         std::size_t value = ibs.read<std::size_t>(_min_codelength);
         decltype(_filesize) _decoded_words = 0;//, readed_bits = _min_codelength;
         char wordbyte[sizeof(Word)];
+
+        std::vector<Word const*> wsbl(_max_codelength + 1);
+        for (auto l = _min_codelength; l <= _max_codelength; ++l)
+            wsbl[l] = _words_string.data() + _limit[l] + _base[l];
+
         while(_decoded_words != _filesize) {
             if (value <= _limit[l]) {
-                Word w = _words.find(value)->second;
+//                Word w = _words.find(value)->second;
+//                Word w = _words_string[_base[l] + (_limit[l] - value)];
+                Word w = *(wsbl[l] - value);
+                int_to_bytes<Word>(wordbyte, w);
 //                os.write(reinterpret_cast<char const*>(&w), sizeof(Word));
                 os.write(int_to_bytes<Word>(wordbyte, w), sizeof(Word));
 
