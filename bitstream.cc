@@ -43,43 +43,44 @@ BitStream::BitStream(std::ios &ios, Type type, std::size_t bufferSize)
     }
 }
 
-template<typename T> 
-T BitStream::read(T count) 
-{
-    T ret = 0;
-    
-    int diff = (int)count - _remainingBits;
-    if (count < _remainingBits) {
-        ret = (_bufftop >> -diff) & MASK_AND(count);
-        _remainingBits = -diff;
-    } else if (diff < (int)nbits) {
-        // add first '_remainingBits' bits
-        ret = _bufftop & MASK_AND(_remainingBits);
-        seek_buffer();
-        // add other 'diff' bits
-        (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);
-        _remainingBits = nbits - diff;
-    } else {
-        // add first '_remainingBits' bits
-        ret = _bufftop & MASK_AND(_remainingBits);
-
-        seek_buffer();
-        while (diff >= (int)nbits) {
-            (ret <<= nbits) |= _bufftop;
-            diff -= nbits;
-            seek_buffer();
-        }
-
-        // add last 'diff' bits
-        (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);                         
-        _remainingBits = nbits - diff;
-    }
-
-    return ret;
-}
-
-template BitStream::Int 
-BitStream::read<BitStream::Int>(BitStream::Int);
+/* template<typename T> 
+ * T BitStream::read(T count) 
+ * {
+ *     T ret = 0;
+ *     
+ *     int diff = (int)count - _remainingBits;
+ *     if (count < _remainingBits) {
+ *         ret = (_bufftop >> -diff) & MASK_AND(count);
+ *         _remainingBits = -diff;
+ *     } else if (diff < (int)nbits) {
+ *         // add first '_remainingBits' bits
+ *         ret = _bufftop & MASK_AND(_remainingBits);
+ *         seek_buffer();
+ *         // add other 'diff' bits
+ *         (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);
+ *         _remainingBits = nbits - diff;
+ *     } else {
+ *         // add first '_remainingBits' bits
+ *         ret = _bufftop & MASK_AND(_remainingBits);
+ * 
+ *         seek_buffer();
+ *         while (diff >= (int)nbits) {
+ *             (ret <<= nbits) |= _bufftop;
+ *             diff -= nbits;
+ *             seek_buffer();
+ *         }
+ * 
+ *         // add last 'diff' bits
+ *         (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);                         
+ *         _remainingBits = nbits - diff;
+ *     }
+ * 
+ *     return ret;
+ * }
+ * 
+ * template BitStream::Int 
+ * BitStream::read<BitStream::Int>(BitStream::Int);
+ */
 
 
 // write 'count' LSBs

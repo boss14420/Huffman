@@ -87,8 +87,11 @@ void Huffman::calculate_freq_table()
     Word word;
     _freq_table.assign(1 << WordLength, 0);
     _is_pos = _is.tellg();
-    while (!_is.eof()) {
-        _is.read(reinterpret_cast<char*>(&word), sizeof(word));
+    BitStream ibs(_is, BitStream::Input);
+    while (!ibs.eof()) {
+        word = ibs.read<Word>(WordLength);
+//    while (!_is.eof()) {
+//        _is.read(reinterpret_cast<char*>(&word), WordLength);
         ++_freq_table[word];
     }
 }
@@ -215,17 +218,18 @@ void Huffman::encode(std::ostream& os) const
     _is.clear();
     _is.seekg(_is_pos);
     if (_min_codelength != WordLength) {
+        std::size_t encoded_words = 0;
         Word word;
-//        BitStream<> bs(os);
-        BitStream bs(os, BitStream::Output);
-        while (!_is.eof()) {
-            _is.read(reinterpret_cast<char*>(&word), sizeof(Word));
-//            bs << _codewords[word];
-//            auto offset = 64 - _code_length[word];
-//            bs.write(_codewords[word].begin() + offset, _codewords[word].end());
-            bs.write(_codewords[word], _code_length[word]);
+        BitStream obs(os, BitStream::Output);
+        BitStream ibs(_is, BitStream::Input);
+        // TODO: compare with num of words
+        while (encoded_words != _filesize) {
+            word = ibs.read<Word>(WordLength);
+//            _is.read(reinterpret_cast<char*>(&word), sizeof(Word));
+            obs.write(_codewords[word], _code_length[word]);
+            ++encoded_words;
         }
-        bs.flush();
+        obs.flush();
     } else {
         // copy file
         std::vector<char> buff(4 << 20); // 4MiB buffer
@@ -279,7 +283,7 @@ void Huffman::decode(std::ostream& os) const
         CodeLength l = _min_codelength;
         std::size_t value = ibs.read<std::size_t>(_min_codelength);
         decltype(_filesize) _decoded_words = 0;//, readed_bits = _min_codelength;
-        char wordbyte[sizeof(Word)];
+//        char wordbyte[sizeof(Word)];
 
         std::vector<Word const*> wsbl(_max_codelength + 1);
         for (auto l = _min_codelength; l <= _max_codelength; ++l)
@@ -290,7 +294,7 @@ void Huffman::decode(std::ostream& os) const
 //                Word w = _words.find(value)->second;
 //                Word w = _words_string[_base[l] + (_limit[l] - value)];
                 Word w = *(wsbl[l] - value);
-                int_to_bytes<Word>(wordbyte, w);
+//                int_to_bytes<Word>(wordbyte, w);
 //                os.write(reinterpret_cast<char const*>(&w), sizeof(Word));
 //                os.write(int_to_bytes<Word>(wordbyte, w), sizeof(Word));
                 obs.write(w, WordLength);

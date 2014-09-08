@@ -50,7 +50,39 @@ private:
 public:
     BitStream(std::ios &ios, Type type, std::size_t bufferSize = 4 << 20);
 
-    template<typename T> T read(T count);
+    template<typename T> T read(T count)
+    {
+        T ret = 0;
+        
+        int diff = (int)count - _remainingBits;
+        if (count < _remainingBits) {
+            ret = (_bufftop >> -diff) & MASK_AND(count);
+            _remainingBits = -diff;
+        } else if (diff < (int)nbits) {
+            // add first '_remainingBits' bits
+            ret = _bufftop & MASK_AND(_remainingBits);
+            seek_buffer();
+            // add other 'diff' bits
+            (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);
+            _remainingBits = nbits - diff;
+        } else {
+            // add first '_remainingBits' bits
+            ret = _bufftop & MASK_AND(_remainingBits);
+
+            seek_buffer();
+            while (diff >= (int)nbits) {
+                (ret <<= nbits) |= _bufftop;
+                diff -= nbits;
+                seek_buffer();
+            }
+
+            // add last 'diff' bits
+            (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);                         
+            _remainingBits = nbits - diff;
+        }
+
+        return ret;
+    }
 
     // write 'count' LSBs
     BitStream& write(Int value, int count);
@@ -73,6 +105,10 @@ public:
 
     std::size_t remaining_bits() const { return _remainingBits; }
 
+    bool eof() const { 
+        return _bufferindex == _buffer.end()
+                && dynamic_cast<std::istream&>(_ios).eof();
+    }
 private:
     void seek_buffer() {
         if (++_bufferindex == _buffer.end())
@@ -85,7 +121,7 @@ private:
 #undef MASK_AND
 };
 
-extern template BitStream::Int 
-BitStream::read<BitStream::Int>(BitStream::Int);
+//extern template BitStream::Int 
+//BitStream::read<BitStream::Int>(BitStream::Int);
 
 #endif // __BITSTREAM_HH__
