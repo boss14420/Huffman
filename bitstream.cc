@@ -84,10 +84,8 @@ BitStream::BitStream(std::ios &ios, Type type, std::size_t bufferSize)
 
 
 // write 'count' LSBs
-BitStream& BitStream::write(Int value, int count)
+BitStream& BitStream::write(BitStream::Int value, int count)
 {
-    if (!count) return *this;
-
     int diff = count - _remainingBits;
     if (diff < 0) {
         _bufftop |= (value & MASK_AND(count)) << -diff;
@@ -103,33 +101,34 @@ BitStream& BitStream::write(Int value, int count)
     return *this;
 }
 
-template <typename Iterator>
-BitStream& BitStream::write(Iterator first, Iterator last)
-{
-    if (first == last) return *this;
-
-    Int bufftop = _bufftop;
-    auto remain = _remainingBits;
-
-    while (first != last) {
-        while (first != last && remain) {
-            bufftop |= *first++ << --remain;
-        }
-
-        if (!remain) {
-            _buffer.push_back(bufftop);
-            bufftop = 0;
-            remain = BitStream::nbits;
-        }
-
-        if (_buffer.size() == _bufferSize)
-            flush(false);
-    }
-    _remainingBits = remain;
-    _bufftop = bufftop;
-
-    return *this;
-}
+/* template <typename Iterator>
+ * BitStream& BitStream::write(Iterator first, Iterator last)
+ * {
+ *     if (first == last) return *this;
+ * 
+ *     Int bufftop = _bufftop;
+ *     auto remain = _remainingBits;
+ * 
+ *     while (first != last) {
+ *         while (first != last && remain) {
+ *             bufftop |= *first++ << --remain;
+ *         }
+ * 
+ *         if (!remain) {
+ *             _buffer.push_back(bufftop);
+ *             bufftop = 0;
+ *             remain = BitStream::nbits;
+ *         }
+ * 
+ *         if (_buffer.size() == _bufferSize)
+ *             flush(false);
+ *     }
+ *     _remainingBits = remain;
+ *     _bufftop = bufftop;
+ * 
+ *     return *this;
+ * }
+ */
 
 void BitStream::flush(bool writeExtraBits)
 {

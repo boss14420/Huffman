@@ -26,33 +26,39 @@
 
 class Huffman {
 public:
-    typedef std::uint8_t Word;
+    typedef std::uint64_t Word;
     typedef std::uint8_t CodeLength;
 //    typedef std::vector<bool> BitSet;
 //    typedef std::bitset<64> BitSet;
     typedef std::uint64_t BitSet;
-    static const std::size_t WordLength;
     static const char _magic_number[];
+    static const std::uint8_t DefaultWordLength = 16;
 
     enum Action { Compress, Decompress };
 
 private:
+    std::istream &_is;
+    Action _action;
+    std::uint8_t _word_length;
+
     std::vector<std::size_t> _freq_table;
     std::vector<CodeLength> _code_length;
     CodeLength _min_codelength, _max_codelength;
-    std::vector<CodeLength> _num_codewords;
-    std::vector<CodeLength> _base;
+    std::vector<Word> _num_codewords;
+    std::vector<Word> _base;
     std::unordered_map<std::size_t, Word> _words;
     std::vector<Word> _words_string;
     std::vector<std::size_t> _limit;
     std::vector<BitSet> _codewords;
-    std::istream &_is;
-    Action _action;
     std::ios::pos_type _is_pos;
+    std::uint32_t _header_size;
     std::uint64_t _filesize;
+    std::uint64_t _num_words;
+    std::uint8_t _offset;
 
 public:
-    Huffman(std::istream& is, Action action);
+  Huffman(std::istream &is, Action action, 
+          std::uint8_t word_length = DefaultWordLength);
 
     void compress(std::ostream &os);
     void decompress(std::ostream &os);

@@ -28,14 +28,14 @@
 #include "huffman.hh"
 #include "integer.hpp"
 
-#define CANNOT_COMPRESS (_min_codelength == WordLength)
+#define CANNOT_COMPRESS (_min_codelength == _word_length)
+#define END_OFFSET (_filesize*8 - _num_words*_word_length - _offset)
 
-const std::size_t Huffman::WordLength = 8;
 const char Huffman::_magic_number[] = {'C', 'O', 'M', 'P',
                                        'R', 'E', 'S', 'S'};
 
-Huffman::Huffman(std::istream& is, Action action) 
-    : _is(is), _action(action)
+Huffman::Huffman(std::istream& is, Action action, std::uint8_t word_length) 
+    : _is(is), _action(action), _word_length(word_length)
 {
     if (_action == Compress)
         init_compress();
@@ -76,6 +76,9 @@ void Huffman::init_compress()
     _filesize = _is.tellg() - pos;
     _is.seekg(pos);
 
+    _offset = 0;
+    _num_words = (_filesize * 8 - _offset) / _word_length;
+
     std::cout << "calculate_freq_table ...\n";
     calculate_freq_table();
     std::cout << "calculate_code_length ...\n";
@@ -87,15 +90,21 @@ void Huffman::init_compress()
 void Huffman::calculate_freq_table()
 {
     Word word;
-    _freq_table.assign(1 << WordLength, 0);
+    _freq_table.assign(1 << _word_length, 0);
     _is_pos = _is.tellg();
     BitStream ibs(_is, BitStream::Input);
-    while (!ibs.eof()) {
-        word = ibs.read<Word>(WordLength);
+    ibs.read<Word>(_offset); // first extra bits
+
+    std::uint64_t reed_words = 0;
+//    while (!ibs.eof()) {
+    while (reed_words != _num_words) {
+        word = ibs.read<Word>(_word_length);
 //    while (!_is.eof()) {
-//        _is.read(reinterpret_cast<char*>(&word), WordLength);
+//        _is.read(reinterpret_cast<char*>(&word), _word_length);
         ++_freq_table[word];
+        ++reed_words;
     }
+    ibs.read<Word>(END_OFFSET); // last extra bits
 }
 
 double Huffman::entropy(std::vector<std::size_t> const &_freq_table)
@@ -128,7 +137,7 @@ void Huffman::calculate_code_length()
     };
 
     std::priority_queue<label, std::vector<label>, HeapComp> Q;
-    for (std::size_t  w = 0; w < std::numeric_limits<Word>::max() + 1; ++w)
+    for (std::size_t  w = 0; w != ((Word)1 << _word_length); ++w)
         if (_freq_table[w] > 0)
             Q.emplace(std::vector<Word> {static_cast<Word>(w)}, _freq_table[w]);
 
@@ -159,6 +168,11 @@ void Huffman::gen_codewords()
               << "\nmax_codelength: " << (int)_max_codelength
               << "\n";
 
+    _header_size = sizeof(_magic_number) + sizeof(_header_size)
+                    + sizeof(_filesize) + sizeof(_num_words)
+                    + sizeof(_word_length) + sizeof(_min_codelength)
+                    + sizeof(_max_codelength);
+
     if (CANNOT_COMPRESS) return;
 
     _num_codewords.assign(_max_codelength + 1, 0);
@@ -166,7 +180,7 @@ void Huffman::gen_codewords()
 
     // _words_string: list all words ordered by code length
     _words_string.reserve(_max_codelength - _min_codelength + 1);
-    for (std::size_t w = 0; w < std::numeric_limits<Word>::max() + 1; ++w) 
+    for (std::size_t w = 0; w != ((Word)1 << _word_length); ++w) 
         if (_code_length[w])
             _words_string.push_back(w);
 
@@ -186,16 +200,22 @@ void Huffman::gen_codewords()
     for (auto l = _min_codelength; l <= _max_codelength; ++l) 
         std::cout << (int)l << ", " << (int)_num_codewords[l] << ", " << _limit[l] << '\n';
     std::cout << '\n';
-    std::cout << "words_string: ";
-    for (auto w : _words_string) std::cout << (int) w << ", ";
-    std::cout << '\n';
+//    std::cout << "words_string: ";
+//    for (auto w : _words_string) std::cout << (int) w << ", ";
+//    std::cout << '\n';
 
     auto values = _limit;
     for (auto w : _words_string) {
         auto v = values[_code_length[w]]--;
-//        _codewords[w] = std::move(to_bitset(v, _code_length[w]));
         _codewords[w] = BitSet(v);
     }
+
+    decltype(_header_size) bits_count = 
+        (_max_codelength - _min_codelength + 1) * _word_length
+        + _words_string.size() * _word_length + (sizeof(_offset) << 3);
+    bits_count = (bits_count == (bits_count / 8) * 8) ? bits_count 
+            : (bits_count / 8) * 8 + 8;
+    _header_size += bits_count >> 3;
 }
 
 /* Huffman::BitSet Huffman::to_bitset(std::size_t value, CodeLength length)
@@ -221,13 +241,20 @@ void Huffman::encode(std::ostream& os) const
         Word word;
         BitStream obs(os, BitStream::Output);
         BitStream ibs(_is, BitStream::Input);
-        // TODO: compare with num of words
-        while (encoded_words != _filesize) {
-            word = ibs.read<Word>(WordLength);
+        
+        word = ibs.read<Word>(_offset);
+        obs.write(word, _offset);
+
+        while (encoded_words != _num_words) {
+            word = ibs.read<Word>(_word_length);
 //            _is.read(reinterpret_cast<char*>(&word), sizeof(Word));
             obs.write(_codewords[word], _code_length[word]);
             ++encoded_words;
         }
+
+        word = ibs.read<Word>(END_OFFSET);
+        obs.write(word, END_OFFSET);
+
         obs.flush();
     } else {
         // copy file
@@ -243,22 +270,29 @@ void Huffman::encode(std::ostream& os) const
 void Huffman::write_header(std::ostream& os) const
 {
     os.write(_magic_number, sizeof(_magic_number));
-    // TODO: endianess
-    char bytes[8];
+
+    char bytes[sizeof(_filesize)];
+    // write header size
+    os.write(int_to_bytes<std::uint32_t>(bytes, _header_size), 4);
     // write file size
     os.write(int_to_bytes<std::uint64_t>(bytes, _filesize), 8);
     // write num of words
-    os.write(int_to_bytes<std::uint64_t>(bytes, _filesize), 8);
+    os.write(int_to_bytes<std::uint64_t>(bytes, _num_words), 8);
 
-    Word wl = WordLength;
-    os.write(reinterpret_cast<char const*>(&wl), sizeof(Word));
-    os.write(reinterpret_cast<char const*>(&_min_codelength), sizeof(CodeLength));
-    os.write(reinterpret_cast<char const*>(&_max_codelength), sizeof(CodeLength));
+    os.write(reinterpret_cast<char const*>(&_word_length), 1);
+    os.write(reinterpret_cast<char const*>(&_min_codelength), 1);
+    os.write(reinterpret_cast<char const*>(&_max_codelength), 1);
+
     if (!CANNOT_COMPRESS) {
-        os.write(reinterpret_cast<char const*>(&_num_codewords[_min_codelength]), 
-                _max_codelength - _min_codelength + 1);
-        os.write(reinterpret_cast<char const*>(_words_string.data()), 
-                    _words_string.size() * sizeof(Word));
+        BitStream obs(os, BitStream::Output);
+        for (auto l = _min_codelength; l <= _max_codelength; ++l)
+            obs.write(_num_codewords[l], _word_length);
+
+        for (auto w : _words_string)
+            obs.write(w, _word_length);
+        
+        obs.write(_offset, sizeof(_offset) << 3);
+        obs.flush();
     }
 }
 
@@ -276,11 +310,16 @@ void Huffman::init_decompress()
 void Huffman::decode(std::ostream& os) const
 {
     _is.clear();
-    _is.seekg(_is_pos);
+//    _is.seekg(_is_pos);
+    _is.seekg(_header_size, std::ios_base::beg);
 
     if (!CANNOT_COMPRESS) {
         BitStream ibs(_is, BitStream::Input);
         BitStream obs(os, BitStream::Output);
+
+        Word extra_bits = ibs.read<Word>(_offset);
+        obs.write(extra_bits, _offset);
+
         CodeLength l = _min_codelength;
         std::size_t value = ibs.read<std::size_t>(_min_codelength);
         decltype(_filesize) _decoded_words = 0;//, readed_bits = _min_codelength;
@@ -290,30 +329,29 @@ void Huffman::decode(std::ostream& os) const
         for (auto l = _min_codelength; l <= _max_codelength; ++l)
             wsbl[l] = _words_string.data() + _limit[l] + _base[l];
 
-        while(_decoded_words != _filesize) {
+        while(_decoded_words != _num_words) {
             if (value <= _limit[l]) {
-//                Word w = _words.find(value)->second;
-//                Word w = _words_string[_base[l] + (_limit[l] - value)];
                 Word w = *(wsbl[l] - value);
-//                int_to_bytes<Word>(wordbyte, w);
-//                os.write(reinterpret_cast<char const*>(&w), sizeof(Word));
-//                os.write(int_to_bytes<Word>(wordbyte, w), sizeof(Word));
-                obs.write(w, WordLength);
-
-//                if (_decoded_words == 0x40090B0 - 1)
-//                    std::cout << readed_bits << '\n';
+                obs.write(w, _word_length);
 
                 value = ibs.read<decltype(value)>(l = _min_codelength);
-//                readed_bits += _min_codelength;
                 ++_decoded_words;
             } else {
-                CodeLength dl = 0;
-                do { ++dl; } while (!_num_codewords[l+dl]);
-                l += dl;
-                value = (value << dl) | ibs.read<std::size_t>(dl);
-//                readed_bits += dl;
+//                CodeLength dl = 0;
+//                do { ++dl; } while (!_num_codewords[l+dl]);
+//                l += dl;
+//                value = (value << dl) | ibs.read<std::size_t>(dl);
+                value = (value << 1) | ibs.read<std::uint32_t>(1);
+                ++l;
             }
         }
+
+        if (END_OFFSET > l)
+            extra_bits = (value << (END_OFFSET - l)) 
+                            | ibs.read<Word>(END_OFFSET - l);
+        else
+            extra_bits = value >> (l - END_OFFSET);
+        obs.write(extra_bits, END_OFFSET);
         obs.flush();
     } else {
         // copy file
@@ -335,28 +373,34 @@ void Huffman::read_header()
     }
 
     char bytes[sizeof(_filesize)];
-    _is.read(bytes, sizeof(_filesize));
+    _is.read(bytes, sizeof(_header_size));
+    _header_size = bytes_to_int<decltype(_header_size)>(bytes);
     _is.read(bytes, sizeof(_filesize));
     _filesize = bytes_to_int<decltype(_filesize)>(bytes);
+    _is.read(bytes, sizeof(_num_words));
+    _num_words = bytes_to_int<decltype(_num_words)>(bytes);
 
-    Word word_length;
-    _is.read(reinterpret_cast<char*>(&word_length), sizeof(Word));
-    _is.read(reinterpret_cast<char*>(&_min_codelength), sizeof(CodeLength));
-    _is.read(reinterpret_cast<char*>(&_max_codelength), sizeof(CodeLength));
+    _is.read(reinterpret_cast<char*>(&_word_length), 1);
+    _is.read(reinterpret_cast<char*>(&_min_codelength), 1);
+    _is.read(reinterpret_cast<char*>(&_max_codelength), 1);
+
+    _is_pos = _is.tellg();
 
     if (CANNOT_COMPRESS) return;
+
+    BitStream ibs(_is, BitStream::Input);
 
     _num_codewords.assign(_max_codelength + 1, 0);
     _limit.assign(_max_codelength + 1, 0);
     _base.assign(_max_codelength + 1, 0);
     auto num_words = 0;
-    CodeLength k;
+    Word k;
 
     if (_min_codelength == _max_codelength) {
-        _limit[_min_codelength] = (1 << word_length) - 1;
+        _limit[_min_codelength] = (1 << _word_length) - 1;
     }
     for (auto l = _min_codelength; l <= _max_codelength; ++l) {
-        _is.read(reinterpret_cast<char*>(&k), sizeof(CodeLength));
+        k = ibs.read<Word>(_word_length);
         _num_codewords[l] = k;
         num_words += k;
 
@@ -369,8 +413,10 @@ void Huffman::read_header()
     }
 
     _words_string.assign(num_words, 0);
-    _is.read(reinterpret_cast<char*>(_words_string.data()),
-                num_words * sizeof(Word));
+    for (auto &w : _words_string)
+        w = ibs.read<Word>(_word_length);
+
+    _offset = ibs.read<Word>(sizeof(_offset)<<3);
 
     _is_pos = _is.tellg();
 

@@ -50,12 +50,12 @@ private:
 public:
     BitStream(std::ios &ios, Type type, std::size_t bufferSize = 4 << 20);
 
-    template<typename T> T read(T count)
+    template<typename T> T read(int count)
     {
         T ret = 0;
         
-        int diff = (int)count - _remainingBits;
-        if (count < _remainingBits) {
+        int diff = count - _remainingBits;
+        if (diff < 0) {
             ret = (_bufftop >> -diff) & MASK_AND(count);
             _remainingBits = -diff;
         } else if (diff < (int)nbits) {
@@ -86,9 +86,6 @@ public:
 
     // write 'count' LSBs
     BitStream& write(Int value, int count);
-
-    template <typename Iterator>
-    BitStream& write(Iterator first, Iterator last);
 
     template <typename BitSet>
     friend 

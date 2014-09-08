@@ -2,7 +2,7 @@ all: test
 
 CXX 		= g++
 #CXXFLAGS 	= -std=c++11 -g -Wall -pipe
-CXXFLAGS 	= -std=c++11 -Wall -O3 -march=native -pipe 
+CXXFLAGS 	= -std=c++11 -Wall -O3 -march=native -pipe
 #CXXFLAGS 	= -std=c++11 -Wall -O3 -march=native -pipe -g -pg
 
 huffman.o: huffman.cc huffman.hh integer.hpp endian.hh bitstream.hh
