@@ -119,20 +119,21 @@ Nội dung 1 file nén bao gồm:
 
 1. Phần tiêu đề (xem phương thức `Huffman::write_header()`)
     1. Magic number: từ `COMPRESS` (8 byte)
-    2. Kích thước file gốc: 8 byte, được ghi theo kiểu Big Endian
-    3. Số lượng từ trong file gốc: 8 byte, Big Endian
-    4. Độ dài một từ (`wl` tính theo bit): 1 byte
-    5. Độ dài nhỏ nhất của các từ mã (`min_codelength`): 1 byte
-    6. Độ dài lớn nhất của các từ mã (`max_codelength`): 1 byte
-    7. Danh sách số lượng các từ mã với độ dài từ `min_codelength` cho đên
+    2. Kích thước phần tiêu đề tính theo byte (4 byte, Big Endian)
+    3. Kích thước file gốc: 8 byte, được ghi theo kiểu Big Endian
+    4. Số lượng từ trong file gốc: 8 byte, Big Endian
+    5. Độ dài một từ (`wl` tính theo bit): 1 byte
+    6. Độ dài nhỏ nhất của các từ mã (`min_codelength`): 1 byte
+    7. Độ dài lớn nhất của các từ mã (`max_codelength`): 1 byte
+    8. Danh sách số lượng các từ mã với độ dài từ `min_codelength` cho đên
     `max_codelength`. Mỗi một số được ghi bởi `wl` bit.
-    8. Chuỗi `words_string`, mỗi một từ được ghi bởi `wl` bit.
-    9. `offset`, vị trí của bit đầu tiên trong file gốc được mã hóa: 1 byte
-    10. Nếu 9 phần trên chưa tròn byte thì chèn thêm các bit 0 vào cuối phần
+    9. Chuỗi `words_string`, mỗi một từ được ghi bởi `wl` bit.
+    10. `offset`, vị trí của bit đầu tiên trong file gốc được mã hóa: 1 byte
+    11. Nếu 9 phần trên chưa tròn byte thì chèn thêm các bit 0 vào cuối phần
     tiêu đề cho tròn byte.
 
 Chú ý: Nếu `wl == min_codelength` (file không mã hóa được) thì tiêu đề
-không có phần 7, 8, 9
+không có phần 8, 9, 10
 
 2. Phần nội dung:
     1. `offset` bit đầu tiên trong file gốc

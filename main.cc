@@ -18,9 +18,10 @@
 
 
 #include "huffman.hh"
-#include <fstream>
+#include <iostream>
 #include <vector>
 #include <cstring>
+#include <cstdio>
 
 #define HELP_STRING (std::string("Usage: ") + argv[0] + " <command> <infile> <outfile> [wlength]\n" + \
                         "wlength: word length in bits (only in compression mode)\n" + \
@@ -28,16 +29,15 @@
 
 int main(int argc, char *argv[]) {
 
-    std::ifstream is;
-    std::ofstream os;
+    FILE *is, *os;
 
     int retval = 0;
     if (argc > 1 && !std::strcmp(argv[1], "c")) {
         std::uint8_t word_length = Huffman::DefaultWordLength; // 8 bit
         
         if (argc >= 4) {
-            is.open(argv[2], std::ios::in | std::ios::binary);
-            os.open(argv[3], std::ios::out | std::ios::binary);
+            is = std::fopen(argv[2], "rb");
+            os = std::fopen(argv[3], "wb");
 
             if (!is) {
                 std::cerr << "Cannot open file " << argv[2] << '\n';
@@ -70,8 +70,8 @@ int main(int argc, char *argv[]) {
         }
     } else if (argc > 1 && !std::strcmp(argv[1], "x")) {
         if (argc >= 4) {
-            is.open(argv[2], std::ios::in | std::ios::binary);
-            os.open(argv[3], std::ios::out | std::ios::binary);
+            is = std::fopen(argv[2], "rb");
+            os = std::fopen(argv[3], "wb");
 
             if (!is) {
                 std::cerr << "Cannot open file " << argv[2] << '\n';
@@ -101,8 +101,8 @@ int main(int argc, char *argv[]) {
     }
 
 end:
-    is.close();
-    os.close();
+    std::fclose(is);
+    std::fclose(os);
 
     return retval;
 }

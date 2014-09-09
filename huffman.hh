@@ -19,7 +19,7 @@
 #ifndef __HUFFMAN_HH__
 #define __HUFFMAN_HH__
 
-#include <iostream>
+#include <cstdio>
 #include <vector>
 #include <unordered_map>
 #include <bitset>
@@ -49,7 +49,7 @@ public:
     enum Action { Compress, Decompress };
 
 private:
-    std::istream &_is;
+    FILE *_is;
     Action _action;
     std::uint8_t _word_length;
 
@@ -62,18 +62,18 @@ private:
     std::vector<Word> _words_string;
     std::vector<std::size_t> _limit;
     std::vector<BitSet> _codewords;
-    std::ios::pos_type _is_pos;
+    long _is_pos;
     std::uint32_t _header_size;
     std::uint64_t _filesize;
     std::uint64_t _num_words;
     std::uint8_t _offset;
 
 public:
-  Huffman(std::istream &is, Action action, 
+  Huffman(FILE *is, Action action, 
           std::uint8_t word_length = DefaultWordLength);
 
-    void compress(std::ostream &os);
-    void decompress(std::ostream &os);
+    void compress(FILE *os);
+    void decompress(FILE *os);
 
 private:
 
@@ -93,9 +93,9 @@ private:
 
     static BitSet to_bitset(std::size_t value, CodeLength length);
 
-    void encode(std::ostream& os) const noexcept;
+    void encode(FILE* os) const noexcept;
 
-    void write_header(std::ostream& os) const;
+    void write_header(FILE* os) const;
 
 ////////////////////////////////////////////////////////////////////////////
 //////// Compress methods //////////////////////////////////////////////////
@@ -105,7 +105,7 @@ private:
 
     void read_header();
 
-    void decode(std::ostream& os) const noexcept;
+    void decode(FILE* os) const noexcept;
 };
 
 #endif // __HUFFMAN_HH__

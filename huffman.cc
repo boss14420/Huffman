@@ -16,6 +16,7 @@
  * =====================================================================================
  */
 
+#include <cstdio>
 #include <iostream>
 #include <limits>
 #include <algorithm>
@@ -34,7 +35,7 @@
 const char Huffman::_magic_number[] = {'C', 'O', 'M', 'P',
                                        'R', 'E', 'S', 'S'};
 
-Huffman::Huffman(std::istream& is, Action action, std::uint8_t word_length) 
+Huffman::Huffman(FILE* is, Action action, std::uint8_t word_length) 
     : _is(is), _action(action), _word_length(word_length)
 {
     if (_action == Compress)
@@ -43,7 +44,7 @@ Huffman::Huffman(std::istream& is, Action action, std::uint8_t word_length)
         init_decompress();
 }
 
-void Huffman::compress(std::ostream &os)
+void Huffman::compress(FILE *os)
 {
     std::cout << "compress ...\n";
     if (_action == Compress) {
@@ -54,7 +55,7 @@ void Huffman::compress(std::ostream &os)
     }
 }
 
-void Huffman::decompress(std::ostream &os)
+void Huffman::decompress(FILE *os)
 {
     std::cout << "decompress ...\n";
     if (_action == Decompress) {
@@ -71,10 +72,10 @@ void Huffman::decompress(std::ostream &os)
 
 void Huffman::init_compress()
 {
-    auto pos = _is.tellg();
-    _is.seekg(0, std::ios::end);
-    _filesize = _is.tellg() - pos;
-    _is.seekg(pos);
+    auto pos = std::ftell(_is);
+    std::fseek(_is, 0, SEEK_END);
+    _filesize = std::ftell(_is) - pos;
+    std::fseek(_is, pos, SEEK_SET);
 
     _offset = 0;
     _num_words = (_filesize * 8 - _offset) / _word_length;
@@ -91,7 +92,7 @@ void Huffman::calculate_freq_table()
 {
     Word word;
     _freq_table.assign(1 << _word_length, 0);
-    _is_pos = _is.tellg();
+    _is_pos = std::ftell(_is);
     BitStream ibs(_is, BitStream::Input);
     ibs.read<Word>(_offset); // first extra bits
 
@@ -232,10 +233,10 @@ void Huffman::gen_codewords()
  * }
  */
 
-void Huffman::encode(std::ostream& os) const noexcept
+void Huffman::encode(FILE* os) const noexcept
 {
-    _is.clear();
-    _is.seekg(_is_pos);
+    std::clearerr(_is);
+    std::fseek(_is, _is_pos, SEEK_SET);
     if (!CANNOT_COMPRESS) {
         std::size_t encoded_words = 0;
         Word word;
@@ -259,29 +260,28 @@ void Huffman::encode(std::ostream& os) const noexcept
     } else {
         // copy file
         std::vector<char> buff(4 << 20); // 4MiB buffer
-        while (!_is.eof()) {
-            _is.read(buff.data(), buff.size());
-            auto bytes = _is.gcount(); 
-            os.write(buff.data(), bytes);
+        while (!std::feof(_is)) {
+            auto bytes = std::fread(buff.data(), 1, buff.size(), _is);
+            std::fwrite(buff.data(), bytes, 1, os);
         }
     }
 }
 
-void Huffman::write_header(std::ostream& os) const
+void Huffman::write_header(FILE* os) const
 {
-    os.write(_magic_number, sizeof(_magic_number));
+    std::fwrite(_magic_number, sizeof(_magic_number), 1, os);
 
     char bytes[sizeof(_filesize)];
     // write header size
-    os.write(int_to_bytes<std::uint32_t>(bytes, _header_size), 4);
+    std::fwrite(int_to_bytes<std::uint32_t>(bytes, _header_size), 4, 1, os);
     // write file size
-    os.write(int_to_bytes<std::uint64_t>(bytes, _filesize), 8);
+    std::fwrite(int_to_bytes<std::uint64_t>(bytes, _filesize), 8, 1, os);
     // write num of words
-    os.write(int_to_bytes<std::uint64_t>(bytes, _num_words), 8);
+    std::fwrite(int_to_bytes<std::uint64_t>(bytes, _num_words), 8, 1, os);
 
-    os.write(reinterpret_cast<char const*>(&_word_length), 1);
-    os.write(reinterpret_cast<char const*>(&_min_codelength), 1);
-    os.write(reinterpret_cast<char const*>(&_max_codelength), 1);
+    std::fwrite(&_word_length, 1, 1, os);
+    std::fwrite(&_min_codelength, 1, 1, os);
+    std::fwrite(&_max_codelength, 1, 1, os);
 
     if (!CANNOT_COMPRESS) {
         BitStream obs(os, BitStream::Output);
@@ -307,11 +307,10 @@ void Huffman::init_decompress()
     read_header();
 }
 
-void Huffman::decode(std::ostream& os) const noexcept
+void Huffman::decode(FILE* os) const noexcept
 {
-    _is.clear();
-//    _is.seekg(_is_pos);
-    _is.seekg(_header_size, std::ios_base::beg);
+    std::clearerr(_is);
+    std::fseek(_is, _header_size, SEEK_SET);
 
     if (!CANNOT_COMPRESS) {
         BitStream ibs(_is, BitStream::Input);
@@ -356,10 +355,9 @@ void Huffman::decode(std::ostream& os) const noexcept
     } else {
         // copy file
         std::vector<char> buff(4 << 20); // 4MiB buffer
-        while (!_is.eof()) {
-            _is.read(buff.data(), buff.size());
-            auto bytes = _is.gcount(); 
-            os.write(buff.data(), bytes);
+        while (!std::feof(_is)) {
+            auto bytes = std::fread(buff.data(), 1, buff.size(), _is);
+            std::fwrite(buff.data(), bytes, 1, os);
         }
     }
 }
@@ -367,24 +365,24 @@ void Huffman::decode(std::ostream& os) const noexcept
 void Huffman::read_header()
 {
     char magic_number[sizeof(_magic_number)];
-    _is.read(magic_number, sizeof(_magic_number));
+    std::fread(magic_number, 1, sizeof(_magic_number), _is);
     if (std::strncmp(magic_number, _magic_number, sizeof(_magic_number))) {
         throw InvalidCompressFile();
     }
 
     char bytes[sizeof(_filesize)];
-    _is.read(bytes, sizeof(_header_size));
+    std::fread(bytes, 1, sizeof(_header_size), _is);
     _header_size = bytes_to_int<decltype(_header_size)>(bytes);
-    _is.read(bytes, sizeof(_filesize));
+    std::fread(bytes, 1, sizeof(_filesize), _is);
     _filesize = bytes_to_int<decltype(_filesize)>(bytes);
-    _is.read(bytes, sizeof(_num_words));
+    std::fread(bytes, 1, sizeof(_num_words), _is);
     _num_words = bytes_to_int<decltype(_num_words)>(bytes);
 
-    _is.read(reinterpret_cast<char*>(&_word_length), 1);
-    _is.read(reinterpret_cast<char*>(&_min_codelength), 1);
-    _is.read(reinterpret_cast<char*>(&_max_codelength), 1);
+    std::fread(&_word_length, 1, 1, _is);
+    std::fread(&_min_codelength, 1, 1, _is);
+    std::fread(&_max_codelength, 1, 1, _is);
 
-    _is_pos = _is.tellg();
+    _is_pos = std::ftell(_is);
 
     if (CANNOT_COMPRESS) return;
 
@@ -418,7 +416,7 @@ void Huffman::read_header()
 
     _offset = ibs.read<Word>(sizeof(_offset)<<3);
 
-    _is_pos = _is.tellg();
+    _is_pos = std::ftell(_is);
 
 //    if (_min_codelength == _max_codelength) return;
 

@@ -18,7 +18,7 @@
 
 
 #include <cstdint>
-#include <iostream>
+#include <cstdio>
 #include <vector>
 #include <memory>
 #include <cstring>
@@ -29,7 +29,7 @@
 
 #define MASK_AND(n) ((ONE << n) - 1)
 
-BitStream::BitStream(std::ios &ios, Type type, std::size_t bufferSize)
+BitStream::BitStream(FILE *ios, Type type, std::size_t bufferSize)
     : _ios(ios), _type(type), _bufferSize(bufferSize / nbytes)
 {
     _remainingBits = nbits;
@@ -132,14 +132,14 @@ BitStream& BitStream::write(BitStream::Int value, int count)
 
 void BitStream::flush(bool writeExtraBits)
 {
-    auto &os = dynamic_cast<std::ostream&>(_ios);
+    auto &os = _ios;
     auto p = std::get_temporary_buffer<char>(_buffer.size() * nbytes);
     auto ptr = p.first;
     for (auto buff : _buffer) {
         int_to_bytes(ptr, buff);
         ptr += nbytes;
     }
-    os.write(p.first, p.second);
+    std::fwrite(p.first, p.second, 1, os);
     std::return_temporary_buffer(p.first);
 
     // TODO: seek iterator to begin
@@ -149,7 +149,7 @@ void BitStream::flush(bool writeExtraBits)
         if (_remainingBits < nbits) {
             int nwrite = nbytes - (_remainingBits / 8);
             char bytes[nbytes];
-            os.write(int_to_bytes(bytes, _bufftop), nwrite);
+            std::fwrite(int_to_bytes(bytes, _bufftop), nwrite, 1, os);
             _bufftop = 0;
             _remainingBits = nbits;
         }
@@ -158,12 +158,11 @@ void BitStream::flush(bool writeExtraBits)
 
 void BitStream::fill_buffer()
 {
-    auto &is = dynamic_cast<std::istream&>(_ios); 
+    auto &is = _ios; 
     auto p = std::get_temporary_buffer<char>(_bufferSize * nbytes);
     char *ptr = p.first;
 
-    is.read(ptr, p.second);
-    auto count = is.gcount();
+    auto count = std::fread(ptr, 1, p.second, is);
     decltype(count) round = (count / nbytes) * nbytes;
     char *ptr_end = ptr + ((round == count) ? round : round + nbytes);
     // set extra bytes to zero

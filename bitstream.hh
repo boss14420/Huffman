@@ -20,7 +20,7 @@
 #define __BITSTREAM_HH__
 
 #include <cstdint>
-#include <iosfwd>
+#include <cstdio>
 #include <vector>
 
 #include "integer.hpp"
@@ -35,7 +35,7 @@ public:
 private:
     std::vector<Int> _buffer;
     unsigned _remainingBits;
-    std::ios &_ios;
+    FILE *_ios;
     Type _type;
     std::size_t _bufferSize;
     Int _bufftop;
@@ -48,7 +48,7 @@ private:
 #define MASK_AND(n) ((ONE << n) - 1)
 
 public:
-    BitStream(std::ios &ios, Type type, std::size_t bufferSize = 4 << 20);
+    BitStream(FILE *ios, Type type, std::size_t bufferSize = 4 << 20);
 
     template<typename T> T read(int count)
     {
@@ -107,8 +107,7 @@ public:
     std::size_t remaining_bits() const { return _remainingBits; }
 
     bool eof() const { 
-        return _bufferindex == _buffer.end()
-                && dynamic_cast<std::istream&>(_ios).eof();
+        return _bufferindex == _buffer.end() && std::feof(_ios);
     }
 private:
     void seek_buffer() {
