@@ -164,7 +164,7 @@ void BitStream::fill_buffer()
 
     is.read(ptr, p.second);
     auto count = is.gcount();
-    auto round = (count / nbytes) * nbytes;
+    decltype(count) round = (count / nbytes) * nbytes;
     char *ptr_end = ptr + ((round == count) ? round : round + nbytes);
     // set extra bytes to zero
     std::memset(ptr + count, 0, ptr_end - (ptr + count));

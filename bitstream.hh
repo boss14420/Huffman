@@ -58,28 +58,32 @@ public:
         if (diff < 0) {
             ret = (_bufftop >> -diff) & MASK_AND(count);
             _remainingBits = -diff;
-        } else if (diff < (int)nbits) {
+        } else {
+//        } else if (diff < (int)nbits) {
             // add first '_remainingBits' bits
             ret = _bufftop & MASK_AND(_remainingBits);
             seek_buffer();
             // add other 'diff' bits
             (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);
             _remainingBits = nbits - diff;
-        } else {
-            // add first '_remainingBits' bits
-            ret = _bufftop & MASK_AND(_remainingBits);
-
-            seek_buffer();
-            while (diff >= (int)nbits) {
-                (ret <<= nbits) |= _bufftop;
-                diff -= nbits;
-                seek_buffer();
-            }
-
-            // add last 'diff' bits
-            (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);                         
-            _remainingBits = nbits - diff;
-        }
+        } 
+        // TODO: integer larger than 64 bits
+/*         else {
+ *             // add first '_remainingBits' bits
+ *             ret = _bufftop & MASK_AND(_remainingBits);
+ * 
+ *             seek_buffer();
+ *             while (diff >= (int)nbits) {
+ *                 (ret <<= nbits) |= _bufftop;
+ *                 diff -= nbits;
+ *                 seek_buffer();
+ *             }
+ * 
+ *             // add last 'diff' bits
+ *             (ret <<= diff) |= (_bufftop >> (nbits - diff)) & MASK_AND(diff);                         
+ *             _remainingBits = nbits - diff;
+ *         }
+ */
 
         return ret;
     }

@@ -425,7 +425,7 @@ void Huffman::read_header()
     _words.reserve(num_words);
     for (auto l = _min_codelength; l <= _max_codelength; ++l) {
         auto value = _limit[l];
-        for (auto k = 0; k != _num_codewords[l]; ++k, --value)
+        for (Word k = 0; k != _num_codewords[l]; ++k, --value)
             _words[value] = _words_string[_base[l] + k]; 
     }
 }
