@@ -1,4 +1,4 @@
-all: test
+all: hz
 
 CXX 		= g++
 #CXXFLAGS 	= -std=c++11 -g -Wall -pipe
@@ -11,10 +11,10 @@ huffman.o: huffman.cc huffman.hh integer.hpp endian.hh bitstream.hh
 bitstream.o: bitstream.cc bitstream.hh integer.hpp endian.hh
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-test.o: main.cc huffman.hh
+main.o: main.cc huffman.hh
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-test: test.o huffman.o bitstream.o
+hz: main.o huffman.o bitstream.o
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 clean:

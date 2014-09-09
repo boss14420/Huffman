@@ -2,31 +2,49 @@
 
 ## Chạy chương trình
     
-Để nén một file `filename` và tạo ra file nén `filename.compress`, ta sử dụng
+Để nén một file `filename` và tạo ra file nén `filename.hz`, ta sử dụng
 lệnh:
-    `./huffman c filename filename.compress`
+    `./hz c filename filename.hz`
 
-Giải nén file nén trên thành file `filename.extract`, ta sử dụng lệnh:
-    `./huffman x filename.compress filename.extract`
+Để thay đổi độ dài từ (mặc định là 8bit), ta thêm độ dài từ vào sau câu lệnh
+nén:
+    `./hz c filename filename.hz 16`
+
+Giải nén file nén trên thành file `filename.ex`, ta sử dụng lệnh:
+    `./hz x filename.hz filename.ex`
 
 ## Kết quả chạy
 
-| file         | dung lượng | tỉ lệ nén | thời gian |
-|--------------|------------|-----------|-----------|
-| E.coli       | 4.5 MiB    |  4        | 0.591s    |
-| alice29.txt  | 149 KiB    |  1.73     | 0.034s    |
-| asyoulik.txt | 123 KiB    |  1.65     | 0.019s    |
-| bible.txt    | 3.9 MiB    |  1.82     | 0.385s    |
-| cp.html      | 25  KiB    |  1.51     | 0.011s    |
-| fields.c     | 11  KiB    |  1.56     | 0.006s    |
-| grammar.lsp  | 3.7 KiB    |  1.63     | 0.007s    |
-| kennedy.xls  | 1006 KiB   |  2.22     | 0.081s    |
-| lcet10.txt   | 417 KiB    |  1.70     | 0.073s    |
-| plrabn12.txt | 471 KiB    |  1.74     | 0.040s    |
-| ptt5         | 502 KiB    |  4.81     | 0.041s    |
-| sum          |  38 KiB    |  1.47     | 0.008s    |
-| world192.txt | 2.4 MiB    |  1.59     | 0.184s    |
-| xargs.1      | 4.2 KiB    |  1.56     | 0.005s    |
+Chương trình được chạy thử trên máy tính với CPU Intel Pentium B940 2GHz, RAM 3GiB, tốc độ
+quay của HDD là 5400rpm.
+
+Độ dài mỗi từ là 16bit.
+
+|-----------------|------------|----------|-----------|---------------|----------|
+| File            | Dung lượng | File nén | Tỉ lệ nén | Thời gian nén | Giải nén |
+|-----------------|------------|----------|-----------|---------------|----------|
+| E.coli          | 4.5MiB     | 1.2MiB   | 4.000     | 0.12s         | 0.10s    |
+| alice29.txt     | 149KiB     | 77KiB    | 1.939     | 0.06s         | 0.06s    |
+| asyoulik.txt    | 123KiB     | 66KiB    | 1.877     | 0.07s         | 0.06s    |
+| bible.txt       | 3.9MiB     | 1.9MiB   | 2.092     | 0.11s         | 0.16s    |
+| cp.html         | 25KiB      | 16KiB    | 1.560     | 0.06s         | 0.06s    |
+| fields.c        | 11KiB      | 6.8KiB   | 1.623     | 0.06s         | 0.05s    |
+| grammar.lsp     | 3.7KiB     | 2.5KiB   | 1.513     | 0.06s         | 0.06s    |
+| kennedy.xls     | 1006KiB    | 405KiB   | 2.488     | 0.07s         | 0.09s    |
+| lcet10.txt      | 417KiB     | 217KiB   | 1.922     | 0.07s         | 0.07s    |
+| plrabn12.txt    | 471KiB     | 236KiB   | 1.999     | 0.07s         | 0.07s    |
+| ptt5            | 502KiB     | 80KiB    | 6.318     | 0.07s         | 0.07s    |
+| sum             | 38KiB      | 25KiB    | 1.541     | 0.06s         | 0.06s    |
+| world192.txt    | 2.4MiB     | 1.3MiB   | 1.834     | 0.10s         | 0.14s    |
+| xargs.1         | 4.2KiB     | 3.0KiB   | 1.390     | 0.06s         | 0.06s    |
+|-----------------|------------|----------|-----------|---------------|----------|
+
+|-----------------|------------|----------|-----------|---------------|----------|
+| img.png         | 2.2MiB     | 2.3MiB   | 0.948     | 0.17s         | 0.09s    |
+| doc.pdf         | 253MiB     | 239MiB   | 1.058     | 4.31s         | 11.98s   |
+| libwireshark.so | 65MiB      | 33MiB    | 1.970     | 0.98s         | 2.16s    |
+| music.flac      | 38MiB      | 38MiB    | 0.997     | 0.73s         | 1.17s    |
+|-----------------|------------|----------|-----------|---------------|----------|
 
 ## Thiết kế chương trình
 
