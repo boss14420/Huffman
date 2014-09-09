@@ -22,28 +22,87 @@
 #include <vector>
 #include <cstring>
 
+#define HELP_STRING (std::string("Usage: ") + argv[0] + " <command> <infile> <outfile> [wlength]\n" + \
+                        "wlength: word length in bits (only in compression mode)\n" + \
+                        "<command>:\n c: compress <infile>\n x: decompress <infile>\n help: print this help\n")
+
 int main(int argc, char *argv[]) {
 
-    std::ifstream is(argv[2], std::ios::in | std::ios::binary);
-    std::ofstream os(argv[3], std::ios::out | std::ios::binary);
+    std::ifstream is;
+    std::ofstream os;
 
-    if (!std::strcmp(argv[1], "c")) {
+    int retval = 0;
+    if (argc > 1 && !std::strcmp(argv[1], "c")) {
         std::uint8_t word_length = Huffman::DefaultWordLength; // 8 bit
         
-        if (argc >= 5) {
-            word_length = std::atoi(argv[4]);
-            if (word_length <= 1 || word_length >= 24)
-                word_length = Huffman::DefaultWordLength;
+        if (argc >= 4) {
+            is.open(argv[2], std::ios::in | std::ios::binary);
+            os.open(argv[3], std::ios::out | std::ios::binary);
+
+            if (!is) {
+                std::cerr << "Cannot open file " << argv[2] << '\n';
+                retval = 1;
+                goto end;
+            } else if (!os) {
+                std::cerr << "Cannot open file " << argv[3] << '\n';
+                retval = 1;
+                goto end;
+            }
         }
 
-        Huffman h(is, Huffman::Compress, word_length);
-        h.compress(os);
-    } else if (!std::strcmp(argv[1], "x")) {
-        Huffman h(is, Huffman::Decompress);
-        h.decompress(os);
+        if (argc >= 5) {
+            word_length = std::atoi(argv[4]);
+            if (word_length <= 1 || word_length >= 24) {
+                std::cerr << "Invalid wlength " << word_length
+                            << "\nUsage: 2 <= wlength <= 24\n";
+                goto end;
+                retval = 1;
+            }
+        }
+
+        try {
+            Huffman h(is, Huffman::Compress, word_length);
+            h.compress(os);
+        } catch (std::exception &e) {
+            std::cerr << e.what() << '\n';
+            retval = 1;
+            goto end;
+        }
+    } else if (argc > 1 && !std::strcmp(argv[1], "x")) {
+        if (argc >= 4) {
+            is.open(argv[2], std::ios::in | std::ios::binary);
+            os.open(argv[3], std::ios::out | std::ios::binary);
+
+            if (!is) {
+                std::cerr << "Cannot open file " << argv[2] << '\n';
+                retval = 1;
+                goto end;
+            } else if (!os) {
+                std::cerr << "Cannot open file " << argv[3] << '\n';
+                retval = 1;
+                goto end;
+            }
+        }
+
+        try {
+            Huffman h(is, Huffman::Decompress);
+            h.decompress(os);
+        } catch (std::exception &e) {
+            std::cerr << e.what() << '\n';
+            retval = 1;
+            goto end;
+        }
+    } else if (argc > 1 && !std::strcmp(argv[1], "help")) {
+        std::cout << HELP_STRING << '\n';
+    } else {
+        std::cerr << "Invalid command\n\n";
+        std::cerr << HELP_STRING << '\n';
+        retval = 1;
     }
+
+end:
     is.close();
     os.close();
 
-    return 0;
+    return retval;
 }

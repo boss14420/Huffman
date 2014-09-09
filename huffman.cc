@@ -50,7 +50,7 @@ void Huffman::compress(std::ostream &os)
         write_header(os);
         encode(os);
     } else {
-        throw "Invalid action";
+        throw InvalidAction();
     }
 }
 
@@ -60,7 +60,7 @@ void Huffman::decompress(std::ostream &os)
     if (_action == Decompress) {
         decode(os);
     } else {
-        throw "Invalid action";
+        throw InvalidAction();
     }
 }
 
@@ -232,7 +232,7 @@ void Huffman::gen_codewords()
  * }
  */
 
-void Huffman::encode(std::ostream& os) const
+void Huffman::encode(std::ostream& os) const noexcept
 {
     _is.clear();
     _is.seekg(_is_pos);
@@ -307,7 +307,7 @@ void Huffman::init_decompress()
     read_header();
 }
 
-void Huffman::decode(std::ostream& os) const
+void Huffman::decode(std::ostream& os) const noexcept
 {
     _is.clear();
 //    _is.seekg(_is_pos);
@@ -369,7 +369,7 @@ void Huffman::read_header()
     char magic_number[sizeof(_magic_number)];
     _is.read(magic_number, sizeof(_magic_number));
     if (std::strncmp(magic_number, _magic_number, sizeof(_magic_number))) {
-        throw "Invalid compressed file";
+        throw InvalidCompressFile();
     }
 
     char bytes[sizeof(_filesize)];

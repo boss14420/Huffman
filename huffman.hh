@@ -24,6 +24,18 @@
 #include <unordered_map>
 #include <bitset>
 
+struct InvalidAction : public std::exception {
+    virtual char const *what() const noexcept override {
+        return "Invalid action";
+    }
+};
+
+struct InvalidCompressFile : public std::exception {
+    virtual char const *what() const noexcept override {
+        return "Invalid compress file";
+    }
+};
+
 class Huffman {
 public:
     typedef std::uint64_t Word;
@@ -81,7 +93,7 @@ private:
 
     static BitSet to_bitset(std::size_t value, CodeLength length);
 
-    void encode(std::ostream& os) const;
+    void encode(std::ostream& os) const noexcept;
 
     void write_header(std::ostream& os) const;
 
@@ -93,7 +105,7 @@ private:
 
     void read_header();
 
-    void decode(std::ostream& os) const;
+    void decode(std::ostream& os) const noexcept;
 };
 
 #endif // __HUFFMAN_HH__
