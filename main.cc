@@ -29,7 +29,7 @@
 
 int main(int argc, char *argv[]) {
 
-    FILE *is, *os;
+    FILE *is = NULL, *os = NULL;
 
     int retval = 0;
     if (argc > 1 && !std::strcmp(argv[1], "c")) {
