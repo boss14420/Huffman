@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
 
         if (argc >= 5) {
             word_length = std::atoi(argv[4]);
-            if (word_length <= 1 || word_length >= 24) {
+            if (word_length <= 1 || word_length >= 25) {
                 std::cerr << "Invalid wlength " << word_length
                             << "\nUsage: 2 <= wlength <= 24\n";
                 goto end;

@@ -19,6 +19,9 @@
 
 set -o nounset                              # Treat unset variables as an error
 
+HZ_HOME="$(dirname $0)"
+HZ="$HZ_HOME/hz"
+
 word_length=16
 
 python2 -c "print '|' + '-'*17 + '|' + '-'*12 + '|' + '-'*10 + \
@@ -34,7 +37,7 @@ do
     hsz=$(/bin/ls -lh "$file" | cut -d" " -f5)iB
     printf "| %-15s | %-10s |" "$filename" $hsz
 
-    ctime=$(/usr/bin/time -f "%e" ./hz c "$file" "$file".hz $word_length 2>&1 >/dev/null)
+    ctime=$(/usr/bin/time -f "%e" $HZ c "$file" "$file".hz $word_length 2>&1 >/dev/null)
     hcsz=$(/bin/ls -lh "$file".hz | cut -d" " -f5)iB
     sz=$(stat --printf "%s" "$file")
     csz=$(stat --printf "%s" "$file".hz)
@@ -42,7 +45,7 @@ do
     ratio=$(printf "%.03f" $ratio)
     printf " %-8s | %-09s | %-13s |" $hcsz $ratio "$ctime"s
 
-    xtime=$(/usr/bin/time -f "%e" ./hz x "$file".hz "$file".ex 2>&1 >/dev/null)
+    xtime=$(/usr/bin/time -f "%e" $HZ x "$file".hz "$file".ex 2>&1 >/dev/null)
     printf " %-8s |" "$xtime"s
     #printf "| %-15s | %-10s | %-8s | %-09s | %-13s | %-8s |\n" \
     #    "$filename" $hsz $hcsz $ratio "$ctime"s "$xtime"s
