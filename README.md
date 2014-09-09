@@ -16,35 +16,43 @@ Giải nén file nén trên thành file `filename.ex`, ta sử dụng lệnh:
 ## Kết quả chạy
 
 Chương trình được chạy thử trên máy tính với CPU Intel Pentium B940 2GHz, RAM 3GiB, tốc độ
-quay của HDD là 5400rpm.
+quay của HDD là 5400rpm. Hệ điều hành Linux 3.16.1, 64bit.
 
 Độ dài mỗi từ là 16bit.
 
-|-----------------|------------|----------|-----------|---------------|----------|
-| File            | Dung lượng | File nén | Tỉ lệ nén | Thời gian nén | Giải nén |
-|-----------------|------------|----------|-----------|---------------|----------|
-| E.coli          | 4.5MiB     | 1.2MiB   | 4.000     | 0.12s         | 0.10s    |
-| alice29.txt     | 149KiB     | 77KiB    | 1.939     | 0.06s         | 0.06s    |
-| asyoulik.txt    | 123KiB     | 66KiB    | 1.877     | 0.07s         | 0.06s    |
-| bible.txt       | 3.9MiB     | 1.9MiB   | 2.092     | 0.11s         | 0.16s    |
-| cp.html         | 25KiB      | 16KiB    | 1.560     | 0.06s         | 0.06s    |
-| fields.c        | 11KiB      | 6.8KiB   | 1.623     | 0.06s         | 0.05s    |
-| grammar.lsp     | 3.7KiB     | 2.5KiB   | 1.513     | 0.06s         | 0.06s    |
-| kennedy.xls     | 1006KiB    | 405KiB   | 2.488     | 0.07s         | 0.09s    |
-| lcet10.txt      | 417KiB     | 217KiB   | 1.922     | 0.07s         | 0.07s    |
-| plrabn12.txt    | 471KiB     | 236KiB   | 1.999     | 0.07s         | 0.07s    |
-| ptt5            | 502KiB     | 80KiB    | 6.318     | 0.07s         | 0.07s    |
-| sum             | 38KiB      | 25KiB    | 1.541     | 0.06s         | 0.06s    |
-| world192.txt    | 2.4MiB     | 1.3MiB   | 1.834     | 0.10s         | 0.14s    |
-| xargs.1         | 4.2KiB     | 3.0KiB   | 1.390     | 0.06s         | 0.06s    |
-|-----------------|------------|----------|-----------|---------------|----------|
+|
+|-----------------|------------|----------|-----------|---------------|----------|---------|
+| File            | Dung lượng | File nén | Tỉ lệ nén | Thời gian nén | Giải nén | K/t MD5 |
+|-----------------|------------|----------|-----------|---------------|----------|---------|
+| E.coli          | 4.5MiB     | 1.2MiB   | 4.000     | 0.07s         | 0.05s    | OK      |
+| alice29.txt     | 149KiB     | 77KiB    | 1.939     | 0.02s         | 0.02s    | OK      |
+| asyoulik.txt    | 123KiB     | 66KiB    | 1.877     | 0.02s         | 0.02s    | OK      |
+| bible.txt       | 3.9MiB     | 1.9MiB   | 2.092     | 0.06s         | 0.11s    | OK      |
+| cp.html         | 25KiB      | 16KiB    | 1.560     | 0.02s         | 0.01s    | OK      |
+| fields.c        | 11KiB      | 6.8KiB   | 1.623     | 0.01s         | 0.02s    | OK      |
+| grammar.lsp     | 3.7KiB     | 2.5KiB   | 1.513     | 0.02s         | 0.02s    | OK      |
+| kennedy.xls     | 1006KiB    | 405KiB   | 2.488     | 0.03s         | 0.03s    | OK      |
+| lcet10.txt      | 417KiB     | 217KiB   | 1.922     | 0.02s         | 0.02s    | OK      |
+| plrabn12.txt    | 471KiB     | 236KiB   | 1.999     | 0.02s         | 0.02s    | OK      |
+| ptt5            | 502KiB     | 80KiB    | 6.318     | 0.02s         | 0.02s    | OK      |
+| sum             | 38KiB      | 25KiB    | 1.541     | 0.02s         | 0.01s    | OK      |
+| world192.txt    | 2.4MiB     | 1.3MiB   | 1.834     | 0.05s         | 0.08s    | OK      |
+| xargs.1         | 4.2KiB     | 3.0KiB   | 1.390     | 0.02s         | 0.01s    | OK      |
+|-----------------|------------|----------|-----------|---------------|----------|---------|
 
-|-----------------|------------|----------|-----------|---------------|----------|
-| img.png         | 2.2MiB     | 2.3MiB   | 0.948     | 0.17s         | 0.09s    |
-| doc.pdf         | 253MiB     | 239MiB   | 1.058     | 4.31s         | 11.98s   |
-| libwireshark.so | 65MiB      | 33MiB    | 1.970     | 0.98s         | 2.16s    |
-| music.flac      | 38MiB      | 38MiB    | 0.997     | 0.73s         | 1.17s    |
-|-----------------|------------|----------|-----------|---------------|----------|
+|-----------------|------------|----------|-----------|---------------|----------|---------|
+| File            | Dung lượng | File nén | Tỉ lệ nén | Thời gian nén | Giải nén | K/t MD5 |
+|-----------------|------------|----------|-----------|---------------|----------|---------|
+| music.flac      | 38MiB      | 38MiB    | 0.997     | 0.65s         | 0.85s    | OK      |
+| leipzig1M.txt   | 124MiB     | 64MiB    | 1.956     | 1.44s         | 3.11s    | OK      |
+| img.png         | 2.2MiB     | 2.3MiB   | 0.948     | 0.13s         | 0.06s    | OK      |
+| doc.pdf         | 253MiB     | 239MiB   | 1.058     | 3.99s         | 8.65s    | OK      |
+| img.png         | 2.2MiB     | 2.3MiB   | 0.948     | 0.15s         | 0.06s    | OK      |
+|-----------------|------------|----------|-----------|---------------|----------|---------|
+
+Bảng kết quả trên được tạo ra bằng cách chạy script `test.sh` đi kèm:
+    `./test.sh <all test file>`
+Với `<all test file>` là các file cần nén.
 
 ## Thiết kế chương trình
 
