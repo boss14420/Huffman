@@ -115,7 +115,7 @@ Ta có thuật toán giải mã như sau:
             l = l + 1
 
 ### Cấu trúc file nén
-Nội dung 1 file bao gồm:
+Nội dung 1 file nén bao gồm:
 
 1. Phần tiêu đề (xem phương thức `Huffman::write_header()`)
     1. Magic number: từ `COMPRESS` (8 byte)
@@ -127,7 +127,15 @@ Nội dung 1 file bao gồm:
     7. Danh sách số lượng các từ mã với độ dài từ `min_codelength` cho đên
     `max_codelength`. Mỗi một số được ghi bở `wl` bit.
     8. Chuỗi `words_string`, mỗi một từ được ghi bởi `wl` bit.
-2. Phần nội dung: chuỗi các từ mã tương ứng với mỗi từ trong file gốc.
+    9. `offset`, vị trí của bit đầu tiên trong file gốc được mã hóa: 1 byte
+    10. Nếu 9 phần trên chưa tròn byte thì chèn thêm các bit 0 vào cuối phần
+    tiêu đề cho tròn byte.
+2. Phần nội dung:
+    1. `offset` bit đầu tiên trong file gốc
+    2. Dãy các từ mã của các từ tương ứng trong file gốc
+    3. Nếu sau khi mã hóa các từ mà vẫn còn lại một số bit lẻ ít hơn `wl` bit
+    thì ghi nội dung các bit này vào file nén (không mã hóa)
+    4. Chèn thêm các bit 0 vào sau nếu chưa đủ 1 byte.
 
 Chương trình giải nén cần đọc thông tin từ phần tiêu để đề khôi phục các cấu
 trúc dữ liệu cần cho việc giải nén theo thuật toán đã nói trên. Phương thức
