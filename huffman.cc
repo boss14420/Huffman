@@ -196,7 +196,7 @@ void Huffman::gen_codewords()
     _limit.assign(_max_codelength + 1, 0);
     _limit[_min_codelength] = _num_codewords[_min_codelength] - 1;
     for (auto l = _min_codelength + 1; l <= _max_codelength; ++l)
-        _limit[l] = (_limit[l-1] + 1) * 2 + (_num_codewords[l] - 1);
+        _limit[l] = (_limit[l-1] + 1) * 2 + _num_codewords[l] - 1;
 
     for (auto l = _min_codelength; l <= _max_codelength; ++l) 
         std::cout << (int)l << ", " << (int)_num_codewords[l] << ", " << _limit[l] << '\n';
@@ -394,16 +394,13 @@ void Huffman::read_header()
     auto num_words = 0;
     Word k;
 
-    if (_min_codelength == _max_codelength) {
-        _limit[_min_codelength] = (1 << _word_length) - 1;
-    }
     for (auto l = _min_codelength; l <= _max_codelength; ++l) {
         k = ibs.read<Word>(_word_length);
         _num_codewords[l] = k;
         num_words += k;
 
         if (l > _min_codelength) {
-            _limit[l] = (_limit[l-1] + 1) * 2 + (k - 1);
+            _limit[l] = (_limit[l-1] + 1) * 2 + k - 1;
             _base[l] = (_base[l-1] + _num_codewords[l-1]);
         } else {
             _limit[l] = k - 1;
@@ -418,13 +415,11 @@ void Huffman::read_header()
 
     _is_pos = std::ftell(_is);
 
-//    if (_min_codelength == _max_codelength) return;
-
-    _words.reserve(num_words);
-    for (auto l = _min_codelength; l <= _max_codelength; ++l) {
-        auto value = _limit[l];
-        for (Word k = 0; k != _num_codewords[l]; ++k, --value)
-            _words[value] = _words_string[_base[l] + k]; 
-    }
+//    _words.reserve(num_words);
+//    for (auto l = _min_codelength; l <= _max_codelength; ++l) {
+//        auto value = _limit[l];
+//        for (Word k = 0; k != _num_codewords[l]; ++k, --value)
+//            _words[value] = _words_string[_base[l] + k]; 
+//    }
 }
 
