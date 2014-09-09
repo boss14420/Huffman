@@ -59,7 +59,7 @@ Sau khi đã có các độ dài từ mã, các từ mã sẽ được sinh ra b
 `Huffman::gen_codewords()`. Các từ mã này là mã tiền tổ chuẩn.
 
 Với phương pháp sinh các từ mã này, trong trường hợp tất cả các từ mã được tính
-ra đều có cùng độ dài (tức là không nén được file) thì giá trị của một từ cũng
+ra đều có cùng độ dài với độ dài từ (tức là không nén được file) thì giá trị của một từ cũng
 chính là giá trị của từ mã tương ứng với nó. Do đó nội dung của file nén giống
 hệt nội dung file gốc (trừ phần tiêu đề).
 
@@ -125,11 +125,15 @@ Nội dung 1 file nén bao gồm:
     5. Độ dài nhỏ nhất của các từ mã (`min_codelength`): 1 byte
     6. Độ dài lớn nhất của các từ mã (`max_codelength`): 1 byte
     7. Danh sách số lượng các từ mã với độ dài từ `min_codelength` cho đên
-    `max_codelength`. Mỗi một số được ghi bở `wl` bit.
+    `max_codelength`. Mỗi một số được ghi bởi `wl` bit.
     8. Chuỗi `words_string`, mỗi một từ được ghi bởi `wl` bit.
     9. `offset`, vị trí của bit đầu tiên trong file gốc được mã hóa: 1 byte
     10. Nếu 9 phần trên chưa tròn byte thì chèn thêm các bit 0 vào cuối phần
     tiêu đề cho tròn byte.
+
+Chú ý: Nếu `wl == min_codelength` (file không mã hóa được) thì tiêu đề
+không có phần 7, 8, 9
+
 2. Phần nội dung:
     1. `offset` bit đầu tiên trong file gốc
     2. Dãy các từ mã của các từ tương ứng trong file gốc
