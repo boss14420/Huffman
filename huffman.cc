@@ -138,7 +138,7 @@ void Huffman::calculate_code_length()
     };
 
     std::priority_queue<label, std::vector<label>, HeapComp> Q;
-    for (std::size_t  w = 0; w != ((Word)1 << _word_length); ++w)
+    for (std::size_t  w = 0; w != (1ULL << _word_length); ++w)
         if (_freq_table[w] > 0)
             Q.emplace(std::vector<Word> {static_cast<Word>(w)}, _freq_table[w]);
 
@@ -181,7 +181,7 @@ void Huffman::gen_codewords()
 
     // _words_string: list all words ordered by code length
     _words_string.reserve(_max_codelength - _min_codelength + 1);
-    for (std::size_t w = 0; w != ((Word)1 << _word_length); ++w) 
+    for (std::size_t w = 0; w != (1ULL << _word_length); ++w) 
         if (_code_length[w])
             _words_string.push_back(w);
 
@@ -331,6 +331,7 @@ void Huffman::decode(FILE* os) const noexcept
         while(_decoded_words != _num_words) {
             if (value <= _limit[l]) {
                 Word w = *(wsbl[l] - value);
+//                Word w = _words[value];
                 obs.write(w, _word_length);
 
                 value = ibs.read<decltype(value)>(l = _min_codelength);
@@ -416,6 +417,7 @@ void Huffman::read_header()
     _is_pos = std::ftell(_is);
 
 //    _words.reserve(num_words);
+//    _words.assign((CodeWord)1 << _max_codelength, 0);
 //    for (auto l = _min_codelength; l <= _max_codelength; ++l) {
 //        auto value = _limit[l];
 //        for (Word k = 0; k != _num_codewords[l]; ++k, --value)

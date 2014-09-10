@@ -60,6 +60,7 @@ private:
     std::vector<Word> _num_codewords;
     std::vector<Word> _base;
 //    std::unordered_map<CodeWord, Word> _words;
+//    std::vector<Word> _words;
     std::vector<Word> _words_string;
     std::vector<CodeWord> _limit;
     std::vector<BitSet> _codewords;
