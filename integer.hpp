@@ -3,7 +3,7 @@
  *
  *       Filename:  integer.hpp
  *
- *    Description:  
+ *    Description:
  *
  *        Version:  1.0
  *        Created:  09/05/2014 03:53:03 PM
@@ -11,7 +11,7 @@
  *       Compiler:  gcc
  *
  *         Author:  BOSS14420 (), firefoxlinux at gmail dot com
- *   Organization:  
+ *   Organization:
  *
  * =====================================================================================
  */
@@ -39,7 +39,7 @@ void assign_big_endian<0>(std::uint8_t *dst, std::uint8_t const *src) {
 
 template <typename T>
 std::uint8_t*
-int_to_bytes(std::uint8_t* bytes, 
+int_to_bytes(std::uint8_t* bytes,
              typename std::enable_if<HL_ENDIANNESS == HL_LITTLE_ENDIAN, T>::type integer)
 {
     *reinterpret_cast<T*>(bytes) = integer;
@@ -100,16 +100,55 @@ struct _big_endian_helper<0, T> {
 };
 
 
+////////////////////////////////////
+//// Arch test
+
+#if defined(__amd64__) && defined(__GNUC__)
+    #define USE_BSWAP(T) (sizeof(T) == 8 || sizeof(T) == 4)
+    #define USE_XCHG(T)  (sizeof(T) == 2)
+    #define USE_SHIFT(T)  (sizeof(T) != 2 && sizeof(T) != 4 && sizeof(T) != 8)
+#elif defined(__i386__) && defined(__GNUC__)
+    #define USE_BSWAP(T) (sizeof(T) == 4)
+    #define USE_XCHG(T)  (sizeof(T) == 2)
+    #define USE_SHIFT(T)  (sizeof(T) != 2 && sizeof(T) != 4)
+#else
+    #define USE_BSWAP(T) (1 > 2)
+    #define USE_XCHG(T) (2 > 3)
+    #define USE_SHIFT(T) (true)
+#endif
+
 ///////////////////////////
 //// int_to_bytes
 
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value, char*>::type
+typename std::enable_if<std::is_integral<T>::value && USE_BSWAP(T), char*>::type
 int_to_bytes(char* bytes, T integer)
 {
 //    *reinterpret_cast<T*>(bytes) = integer;
     typedef typename std::make_unsigned<T>::type UT;
-    _big_endian_helper<sizeof(T) - 1, UT>::assign(bytes + sizeof(T) - 1, 
+    __asm__("bswap %0" : "+r"(integer));
+    *reinterpret_cast<UT*>(bytes) = integer;
+    return bytes;
+}
+
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value && USE_XCHG(T), char*>::type
+int_to_bytes(char* bytes, T integer)
+{
+//    *reinterpret_cast<T*>(bytes) = integer;
+    typedef typename std::make_unsigned<T>::type UT;
+    __asm__("xchgb %a0, %b0" : "+q"(integer));
+    *reinterpret_cast<UT*>(bytes) = integer;
+    return bytes;
+}
+
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value && USE_SHIFT(T), char*>::type
+int_to_bytes(char* bytes, T integer)
+{
+//    *reinterpret_cast<T*>(bytes) = integer;
+    typedef typename std::make_unsigned<T>::type UT;
+    _big_endian_helper<sizeof(T) - 1, UT>::assign(bytes + sizeof(T) - 1,
                                                 static_cast<UT>(integer));
     return bytes;
 }
@@ -117,8 +156,29 @@ int_to_bytes(char* bytes, T integer)
 ///////////////////////////
 //// bytes_to_int
 
+
 template <typename T>
-typename std::enable_if<std::is_integral<T>::value, T>::type
+typename std::enable_if<std::is_integral<T>::value && USE_BSWAP(T), T>::type
+bytes_to_int(char const* bytes)
+{
+    typedef typename std::make_unsigned<T>::type UT;
+    auto r = *reinterpret_cast<UT const*>(bytes);
+    __asm__("bswap %0" : "+r"(r));
+    return r;
+}
+
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value && USE_XCHG(T), T>::type
+bytes_to_int(char const* bytes)
+{
+    typedef typename std::make_unsigned<T>::type UT;
+    auto r = *reinterpret_cast<UT const*>(bytes);
+    __asm__("xchgb %a0, %b0" : "+q"(r));
+    return r;
+}
+
+template <typename T>
+typename std::enable_if<std::is_integral<T>::value && USE_SHIFT(T), T>::type
 bytes_to_int(char const* bytes)
 {
     typedef typename std::make_unsigned<T>::type UT;
